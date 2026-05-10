@@ -9,14 +9,15 @@ app.use('/api/*', cors())
 
 // ── API: Product Search ──────────────────────────────────────────────────────
 app.get('/api/search', async (c) => {
-  const query   = c.req.query('q') || 'trending'
-  const source  = c.req.query('source') || 'all'
-  const page    = parseInt(c.req.query('page') || '1')
-  const limit   = parseInt(c.req.query('limit') || '20')
+  const query    = c.req.query('q') || 'trending'
+  const source   = c.req.query('source') || 'all'
+  const category = c.req.query('category') || 'all'
+  const page     = parseInt(c.req.query('page') || '1')
+  const limit    = parseInt(c.req.query('limit') || '20')
 
   try {
-    const products = await searchProducts(query, source, page, limit)
-    return c.json({ success: true, data: products, query, source, page, limit })
+    const products = await searchProducts(query, source, page, limit, category)
+    return c.json({ success: true, data: products, query, source, category, page, limit })
   } catch (e: any) {
     return c.json({ success: false, error: e.message }, 500)
   }
@@ -202,39 +203,275 @@ const PRODUCT_POOL = [
   { id:'p033', title:'Automatic Pet Feeder 4L Smart WiFi', category:'Pet Supplies', supplierPrice:1080, sellingPrice:3299, platform:'AliExpress', image:'https://images.unsplash.com/photo-1601758174114-e711c0cbaa69?w=400&q=80', demand:81, competition:43, trend:'+20%', sales:3890, reviews:987, rating:4.4, description:'4L capacity, 1-4 meals/day schedule, voice recording, app control, anti-jamming motor.' },
 ]
 
-// ── Business Logic Functions ─────────────────────────────────────────────────
+// ── Semantic Search Engine ───────────────────────────────────────────────────
 
-async function searchProducts(query: string, source: string, page: number, limit: number) {
-  const q = query.toLowerCase()
+// Generic tokens that are so common they should NOT count as meaningful matches alone
+// Single-token queries that match only via these won't pass threshold
+const GENERIC_TOKENS = new Set([
+  'smart', 'automatic', 'digital', 'electric', 'wireless', 'bluetooth', 'portable',
+  'mini', 'new', 'latest', 'best', 'pro', 'monitor', 'device', 'sensor', 'set',
+  'kit', 'pack', 'light', 'video', 'audio', 'color', 'ring', 'fast', 'high',
+  'quality', 'premium', 'super', 'ultra', 'plus', 'max', 'led', 'usb', 'wifi',
+])
 
-  let filtered = PRODUCT_POOL.filter(p => {
-    const matchesQuery = q === 'trending' || q === '' || q === 'all' ||
-      p.title.toLowerCase().includes(q) ||
-      p.category.toLowerCase().includes(q) ||
-      p.description.toLowerCase().includes(q)
+// Synonym / alias map: each key expands to additional tokens to match against
+const SYNONYMS: Record<string, string[]> = {
+  // Audio
+  'earbuds':       ['tws', 'wireless', 'bluetooth', 'earphone', 'headphone', 'earbud', 'airpod'],
+  'headphones':    ['earbuds', 'tws', 'earphone', 'wireless', 'bluetooth'],
+  'earphone':      ['earbuds', 'tws', 'bluetooth', 'headphone'],
+  'speaker':       ['bluetooth', 'portable', 'audio', 'sound'],
+  // Wearables
+  'smartwatch':    ['smart watch', 'fitness', 'tracker', 'band', 'wearable'],
+  'smart watch':   ['fitness', 'tracker', 'band', 'amoled', 'wearable'],
+  'fitness band':  ['smart watch', 'tracker', 'heart rate', 'spo2'],
+  // Phones / Accessories
+  'charger':       ['usb-c', 'fast charging', 'gan', 'power', 'adapter'],
+  'phone holder':  ['car mount', 'magnetic', 'dashboard', 'vehicle', 'mobile'],
+  'car mount':     ['phone holder', 'dashboard', 'magnetic', 'vehicle'],
+  'phone stand':   ['holder', 'mount', 'desktop', 'mobile'],
+  // Cameras / Video
+  'camera':        ['action cam', '4k', 'dashcam', 'video', 'photo', 'drone'],
+  'dashcam':       ['dash camera', 'car camera', '4k', 'front rear', 'recording'],
+  'drone':         ['mini drone', 'quadcopter', 'fpv', 'aerial'],
+  'ring light':    ['led light', 'selfie', 'studio', 'lighting', 'tripod'],
+  // Computers / Gaming
+  'keyboard':      ['mechanical', 'gaming', 'rgb', 'typing'],
+  'gaming':        ['rgb', 'mechanical', 'keyboard', 'mouse', 'fps'],
+  // Skincare / Beauty
+  'serum':         ['vitamin c', 'hyaluronic', 'brightening', 'skincare', 'face'],
+  'vitamin c':     ['serum', 'brightening', 'ascorbic', 'skincare', 'niacinamide'],
+  'moisturizer':   ['spf', 'sunscreen', 'hydrating', 'cream', 'skincare'],
+  'sunscreen':     ['spf', 'moisturizer', 'uv', 'protection', 'broad spectrum'],
+  'face massage':  ['jade roller', 'electric', 'massager', 'facial', 'vibration'],
+  'jade roller':   ['massager', 'face', 'electric', 'beauty', 'facial'],
+  'derma roller':  ['microneedling', 'collagen', 'skin', 'needle', 'roller'],
+  'skincare':      ['serum', 'moisturizer', 'vitamin c', 'hyaluronic', 'spf'],
+  // Home & Kitchen
+  'air purifier':  ['hepa', 'filter', 'air cleaner', 'pm2.5', 'purification'],
+  'water bottle':  ['insulated', 'stainless steel', 'tumbler', 'flask', 'hydration'],
+  'smart bulb':    ['led bulb', 'wifi', 'smart light', 'alexa', 'google home'],
+  'led bulb':      ['smart bulb', 'wifi', 'color changing', 'light'],
+  'cookware':      ['pan', 'pot', 'non-stick', 'kitchen', 'frying', 'cooking'],
+  'pan':           ['non-stick', 'cookware', 'frying', 'cooking'],
+  // Fitness / Sports
+  'yoga mat':      ['exercise mat', 'non-slip', 'fitness', 'workout', 'tpe'],
+  'resistance band':['workout', 'exercise', 'fitness', 'elastic', 'gym', 'bands'],
+  'jump rope':     ['skipping', 'cardio', 'speed cable', 'fitness'],
+  'foam roller':   ['massage', 'muscle', 'recovery', 'deep tissue', 'exercise'],
+  'gym':           ['fitness', 'workout', 'exercise', 'resistance', 'yoga'],
+  'workout':       ['gym', 'fitness', 'exercise', 'resistance', 'yoga'],
+  'fitness':       ['gym', 'workout', 'yoga', 'sports', 'health', 'exercise'],
+  // Health
+  'blood pressure': ['bp monitor', 'monitor', 'digital', 'automatic', 'sphygmomanometer'],
+  'oximeter':      ['pulse oximeter', 'spo2', 'heart rate', 'fingertip'],
+  'pulse oximeter':['spo2', 'oxygen', 'heart rate', 'fingertip', 'monitor'],
+  'massager':      ['neck massager', 'electric', 'pulse', 'kneading', 'tens'],
+  'neck massager': ['electric', 'tens', 'pulse', 'kneading', 'heat'],
+  // Fashion
+  'shoes':         ['running', 'sneakers', 'footwear', 'mesh', 'sport'],
+  'running shoes': ['shoes', 'sneakers', 'mesh', 'lightweight', 'sport'],
+  'wallet':        ['leather', 'rfid', 'men', 'slim', 'card holder'],
+  'sunglasses':    ['polarized', 'uv400', 'shades', 'eyewear'],
+  'kurti':         ['ethnic', 'women', 'floral', 'indian wear', 'fashion'],
+  'ethnic':        ['kurti', 'indian', 'traditional', 'floral', 'women'],
+  // Baby
+  'baby monitor':  ['wifi', 'video', 'camera', 'night vision', 'baby'],
+  // Pets
+  'pet feeder':    ['automatic', 'wifi', 'smart', 'dog', 'cat', 'food'],
+  'automatic feeder':['pet', 'wifi', 'smart', 'dog', 'cat'],
+  // Toys
+  'building blocks':['lego', 'stem', 'educational', 'construction', 'kids'],
+  'stem':          ['building blocks', 'educational', 'kids', 'learning'],
+  'drawing board': ['magnetic', 'kids', 'toy', 'writing'],
+  // Generic
+  'wireless':      ['bluetooth', 'wifi', 'cordless'],
+  'bluetooth':     ['wireless', 'cordless', 'bt'],
+  'smart':         ['wifi', 'alexa', 'google', 'app controlled', 'smart home'],
+  'cheap':         ['affordable', 'budget', 'low cost', 'value'],
+  'best':          ['top', 'premium', 'popular', 'trending'],
+  'waterproof':    ['ipx', 'water resistant', 'ip68', 'splash proof'],
+  'mini':          ['compact', 'portable', 'small', 'travel'],
+  'portable':      ['mini', 'compact', 'travel', 'lightweight'],
+}
 
-    const matchesSource = source === 'all' || p.platform.toLowerCase().replace(/ /g,'_') === source.toLowerCase()
+// Per-product keyword tags — intentionally SPECIFIC to each product's core identity.
+// Do NOT add generic descriptors (smart, automatic, wireless…) here — they cause cross-product noise.
+// Only add tags a user would plausibly search to find THIS specific product.
+const PRODUCT_TAGS: Record<string, string[]> = {
+  'p001': ['earbuds', 'headphones', 'earphone', 'tws', 'airpod', 'noise cancellation', 'in-ear'],
+  'p002': ['smartwatch', 'smart watch', 'wearable', 'health tracker', 'fitness watch', 'amoled watch'],
+  'p003': ['keyboard', 'gaming keyboard', 'mechanical keyboard', 'rgb keyboard', 'tenkeyless'],
+  'p004': ['speaker', 'bluetooth speaker', 'portable speaker', 'music speaker', 'outdoor speaker'],
+  'p005': ['charger', 'usb charger', 'fast charger', 'gan charger', 'power adapter', 'type-c charger', 'laptop charger'],
+  'p006': ['action camera', 'gopro', 'sports camera', '4k camera', 'waterproof camera', 'adventure camera'],
+  'p007': ['ring light', 'studio light', 'selfie light', 'content creator', 'photography light', 'tripod light'],
+  'p008': ['drone', 'mini drone', 'quadcopter', 'aerial drone', 'flying camera', 'fpv'],
+  'p009': ['kurti', 'ethnic wear', 'women clothing', 'indian fashion', 'traditional wear', 'floral kurti'],
+  'p010': ['shoes', 'running shoes', 'sneakers', 'sport shoes', 'footwear', 'gym shoes', 'jogging shoes'],
+  'p011': ['wallet', 'mens wallet', 'leather wallet', 'rfid wallet', 'card holder', 'slim wallet', 'bifold wallet'],
+  'p012': ['sunglasses', 'shades', 'eyewear', 'polarized sunglasses', 'uv protection glasses', 'sunnies'],
+  'p013': ['serum', 'vitamin c serum', 'face serum', 'brightening serum', 'skincare', 'niacinamide serum'],
+  'p014': ['face massager', 'jade roller', 'facial massager', 'beauty tool', 'face sculpting', 'jade massager'],
+  'p015': ['moisturizer', 'sunscreen', 'spf cream', 'face cream', 'skincare', 'day cream', 'uv protection cream'],
+  'p016': ['derma roller', 'microneedling', 'skin roller', 'collagen stimulator', 'dermaroller'],
+  'p017': ['air purifier', 'hepa filter', 'air cleaner', 'room purifier', 'air filtration', 'hepa purifier'],
+  'p018': ['smart bulb', 'led bulb', 'wifi bulb', 'alexa bulb', 'color bulb', 'smart home bulb'],
+  'p019': ['water bottle', 'insulated bottle', 'flask', 'tumbler', 'hydration bottle', 'steel bottle', 'thermos'],
+  'p020': ['cookware', 'frying pan', 'cooking pot', 'non stick pan', 'kitchen set', 'pots and pans'],
+  'p021': ['yoga mat', 'exercise mat', 'gym mat', 'fitness mat', 'workout mat', 'pilates mat', 'non slip mat'],
+  'p022': ['resistance band', 'exercise band', 'gym band', 'workout band', 'elastic band', 'pull band', 'latex band'],
+  'p023': ['jump rope', 'skipping rope', 'speed rope', 'skipping', 'jump skipping', 'cardio rope'],
+  'p024': ['foam roller', 'muscle roller', 'massage roller', 'recovery roller', 'body roller', 'trigger point roller'],
+  'p025': ['blood pressure monitor', 'bp monitor', 'bp machine', 'blood pressure cuff', 'sphygmomanometer', 'hypertension monitor'],
+  'p026': ['oximeter', 'pulse oximeter', 'spo2 monitor', 'oxygen meter', 'finger oximeter', 'blood oxygen monitor'],
+  'p027': ['neck massager', 'shoulder massager', 'tens massager', 'pulse massager', 'cervical massager', 'pain relief massager'],
+  'p028': ['building blocks', 'lego', 'stem blocks', 'educational toy', 'construction toy', 'kids building set'],
+  'p029': ['drawing board', 'magnetic drawing board', 'kids drawing', 'doodle board', 'magnetic sketch board'],
+  'p030': ['phone holder', 'car phone holder', 'car mount', 'mobile holder', 'dashboard phone mount', 'magnetic car mount'],
+  'p031': ['dashcam', 'dash camera', 'car camera', 'car dashcam', 'driving recorder', 'car dvr'],
+  'p032': ['baby monitor', 'baby camera', 'infant monitor', 'nursery camera', 'baby surveillance'],
+  'p033': ['pet feeder', 'dog feeder', 'cat feeder', 'automatic pet feeder', 'pet food dispenser'],
+}
 
-    return matchesQuery && matchesSource
-  })
+// Core semantic scorer — returns a relevance score for a product vs query
+// Scoring is additive: phrase match > token match > synonym match
+// Generic tokens (smart, wireless, monitor…) have reduced weight to prevent noise
+function semanticScore(product: any, rawQuery: string): number {
+  const q = rawQuery.toLowerCase().trim()
+  if (!q || q === 'trending' || q === 'all') return 100
 
-  if (filtered.length === 0) {
-    // Return a broader result if no exact match
-    filtered = PRODUCT_POOL.filter(p =>
-      p.category.toLowerCase().includes(q.split(' ')[0]) ||
-      p.title.toLowerCase().includes(q.split(' ')[0])
-    )
+  // Tokenise the query (strip common stopwords)
+  const STOPWORDS = new Set([
+    'a','an','the','and','or','for','with','in','on','of','to','is','are',
+    'best','buy','cheap','good','top','new','latest','get','find','i','me',
+  ])
+  const queryTokens = q.split(/\s+/).filter(t => t.length > 1 && !STOPWORDS.has(t))
+  if (queryTokens.length === 0) return 100
+
+  // Build expanded token set from synonyms (only for non-generic query tokens)
+  const expandedTokens = new Set<string>()
+  for (const token of queryTokens) {
+    if (GENERIC_TOKENS.has(token)) continue  // don't expand pure generic tokens
+    // Exact key lookup only — no substring/partial matching to prevent over-expansion
+    if (SYNONYMS[token]) SYNONYMS[token].forEach(s => expandedTokens.add(s.toLowerCase()))
+    // Allow singular↔plural tolerance (e.g. "earbud" → "earbuds")
+    const withS = token + 's'
+    const withoutS = token.endsWith('s') ? token.slice(0, -1) : null
+    if (SYNONYMS[withS]) SYNONYMS[withS].forEach(s => expandedTokens.add(s.toLowerCase()))
+    if (withoutS && SYNONYMS[withoutS]) SYNONYMS[withoutS].forEach(s => expandedTokens.add(s.toLowerCase()))
+  }
+  // Full-phrase synonym lookup (e.g. "smart watch" → fitness, tracker …)
+  if (SYNONYMS[q]) SYNONYMS[q].forEach(s => expandedTokens.add(s.toLowerCase()))
+
+  // Per-product searchable surfaces
+  const titleLC    = product.title.toLowerCase()
+  const categoryLC = product.category.toLowerCase()
+  const descLC     = product.description.toLowerCase()
+  const tagsLC     = (PRODUCT_TAGS[product.id] || []).join(' ').toLowerCase()
+
+  // Word-boundary aware match — prevents "mat" matching inside "automatic", "magnetic" etc.
+  // A match is valid only when surrounded by non-word chars (spaces, hyphens, start/end)
+  const wordMatch = (text: string, term: string): boolean => {
+    if (!term || !text) return false
+    // Escape special regex chars in the term
+    const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    // Word boundary: term is preceded/followed by non-alphanumeric or string boundary
+    const re = new RegExp(`(?<![a-z0-9])${escaped}(?![a-z0-9])`)
+    return re.test(text)
   }
 
-  if (filtered.length === 0) filtered = PRODUCT_POOL.slice(0, limit)
+  let score = 0
 
+  // ── Tier 1: Full-phrase word-boundary matches (highest signal) ──────────────
+  if (wordMatch(titleLC, q))      score += 80
+  if (wordMatch(tagsLC, q))       score += 50
+  if (wordMatch(categoryLC, q))   score += 30
+  if (wordMatch(descLC, q))       score += 20
+
+  // ── Tier 2: Original query tokens (strong signal, word-boundary) ─────────────
+  let originalHits = 0
+  for (const token of queryTokens) {
+    const isGeneric = GENERIC_TOKENS.has(token)
+    const weight    = isGeneric ? 0.3 : 1.0
+
+    if (wordMatch(titleLC, token))    { score += Math.round(25 * weight); originalHits++ }
+    else if (wordMatch(tagsLC, token))    { score += Math.round(18 * weight); originalHits++ }
+    else if (wordMatch(categoryLC, token)) { score += Math.round(12 * weight); originalHits++ }
+    else if (wordMatch(descLC, token))    { score += Math.round(6  * weight); originalHits++ }
+  }
+
+  // Multi-token queries MUST hit at least one original (non-synonym) token
+  if (queryTokens.length >= 2 && originalHits === 0) return 0
+
+  // ── Tier 3: Expanded/synonym tokens (word-boundary, capped) ──────────────────
+  let synonymHits = 0
+  for (const token of expandedTokens) {
+    if (queryTokens.includes(token)) continue
+    if (wordMatch(titleLC, token))    { score += 10; synonymHits++ }
+    else if (wordMatch(tagsLC, token)) { score += 7;  synonymHits++ }
+    else if (wordMatch(descLC, token)) { score += 3;  synonymHits++ }
+  }
+
+  // Cap pure-synonym contribution to prevent unrelated products surfacing
+  const synonymOnlyScore = (synonymHits > 0 && originalHits === 0) ? score : 0
+  if (synonymOnlyScore > 25) score = 25 + (score - synonymOnlyScore)
+
+  return Math.max(0, score)
+}
+
+// ── Business Logic Functions ─────────────────────────────────────────────────
+
+async function searchProducts(query: string, source: string, page: number, limit: number, category: string = 'all') {
+  const q = query.toLowerCase().trim()
+  const isTrending = !q || q === 'trending' || q === 'all'
+
+  // Step 1: Source filter
+  const sourceFiltered = PRODUCT_POOL.filter(p => {
+    return source === 'all' ||
+      p.platform.toLowerCase() === source.toLowerCase() ||
+      p.platform.toLowerCase().replace(/ /g, '_') === source.toLowerCase()
+  })
+
+  // Step 2: Category filter (additive — narrows results, doesn't replace keyword)
+  const categoryFiltered = category === 'all'
+    ? sourceFiltered
+    : sourceFiltered.filter(p => p.category.toLowerCase() === category.toLowerCase())
+
+  // Step 3: Semantic scoring
+  let scored: Array<{ product: any; score: number }>
+
+  if (isTrending) {
+    // No query → sort by demand
+    scored = categoryFiltered.map(p => ({ product: p, score: p.demand }))
+  } else {
+    scored = categoryFiltered.map(p => ({ product: p, score: semanticScore(p, q) }))
+  }
+
+  // Step 4: Filter to only products with meaningful relevance
+  // Threshold is intentionally strict — we prefer fewer, accurate results over padded noise
+  const THRESHOLD = isTrending ? 0 : 15
+  let relevant = scored.filter(x => x.score >= THRESHOLD)
+
+  // Mild relaxation: if nothing at all found, try a lower threshold (but NEVER fall back to unrelated products)
+  if (!isTrending && relevant.length === 0) {
+    const relaxed = scored.filter(x => x.score >= 5)
+    if (relaxed.length > 0) relevant = relaxed
+    // If still nothing, return empty — don't show random products
+  }
+
+  // Step 5: Sort by score descending, then by demand as tiebreaker
+  relevant.sort((a, b) => b.score - a.score || b.product.demand - a.product.demand)
+
+  const products = relevant.map(x => x.product)
+  const total = products.length
   const start = (page - 1) * limit
-  const paginated = filtered.slice(start, start + limit)
+  const paginated = products.slice(start, start + limit)
 
   return {
-    products: paginated.map(p => enrichProduct(p, query)),
-    total: filtered.length,
-    pages: Math.ceil(filtered.length / limit),
+    products: paginated.map(p => enrichProduct(p, q)),
+    total,
+    pages: Math.ceil(total / limit),
     currentPage: page
   }
 }
@@ -480,12 +717,16 @@ async function getViralScore(productId: string) {
 
 async function analyzeCompetitors(keyword: string, marketplace: string) {
   const k = keyword || 'electronics'
-  const relevant = PRODUCT_POOL
-    .filter(p => p.title.toLowerCase().includes(k.toLowerCase()) ||
-                 p.category.toLowerCase().includes(k.toLowerCase()))
-    .slice(0, 5)
+  // Use semantic scoring to find genuinely relevant competitor products
+  const scored = PRODUCT_POOL
+    .map(p => ({ p, score: semanticScore(p, k) }))
+    .filter(x => x.score > 0)
+    .sort((a, b) => b.score - a.score)
 
-  const competitors = relevant.length > 0 ? relevant : PRODUCT_POOL.slice(0, 5)
+  const relevant = scored.length > 0
+    ? scored.slice(0, 5).map(x => x.p)
+    : PRODUCT_POOL.slice(0, 5)
+  const competitors = relevant
 
   return {
     keyword,
@@ -510,12 +751,15 @@ async function analyzeCompetitors(keyword: string, marketplace: string) {
 
 async function findSuppliers(product: string) {
   const p = product || 'electronics'
-  const relevant = PRODUCT_POOL.filter(prod =>
-    prod.title.toLowerCase().includes(p.toLowerCase()) ||
-    prod.category.toLowerCase().includes(p.toLowerCase())
-  ).slice(0, 3)
+  // Use semantic scoring for genuinely relevant supplier matching
+  const scored = PRODUCT_POOL
+    .map(prod => ({ prod, score: semanticScore(prod, p) }))
+    .filter(x => x.score > 0)
+    .sort((a, b) => b.score - a.score)
 
-  const baseProducts = relevant.length > 0 ? relevant : PRODUCT_POOL.slice(0, 3)
+  const baseProducts = scored.length > 0
+    ? scored.slice(0, 3).map(x => x.prod)
+    : PRODUCT_POOL.slice(0, 3)
   const supplierNames = [
     'Shenzhen TechTrend Co.', 'Guangzhou MegaSupply Ltd', 'Yiwu Global Exports',
     'Mumbai Wholesale Hub', 'Delhi Trade Connect', 'Chennai Dropship India',
@@ -1436,9 +1680,9 @@ async function doSearch(page = 1) {
   ).join('');
 
   try {
-    const finalQ = category !== 'all' ? category : q;
     const finalSrc = source !== 'all' ? source : 'all';
-    const { data } = await axios.get(\`/api/search?q=\${encodeURIComponent(finalQ)}&source=\${encodeURIComponent(finalSrc)}&page=\${page}&limit=20\`);
+    // Pass keyword AND category separately — backend handles both independently
+    const { data } = await axios.get(\`/api/search?q=\${encodeURIComponent(q)}&source=\${encodeURIComponent(finalSrc)}&category=\${encodeURIComponent(category)}&page=\${page}&limit=20\`);
     if (data.success) {
       currentProducts = data.data.products;
       applySort();
