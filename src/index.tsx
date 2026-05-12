@@ -134,6 +134,35 @@ app.get('/viral-products', (c) => c.html(getViralProductsPage()))
 app.get('/login', (c) => c.html(getLoginPage()))
 app.get('/signup', (c) => c.html(getSignupPage()))
 app.get('/pricing', (c) => c.html(getPricingPage()))
+app.get('/shopping', (c) => c.html(getShoppingPage()))
+app.get('/ai-agents', (c) => c.html(getAIAgentsPage()))
+app.get('/analytics', (c) => c.html(getAnalyticsPage()))
+app.get('/marketplace', (c) => c.html(getMarketplacePage()))
+app.get('/notifications', (c) => c.html(getNotificationsPage()))
+
+// ── API: AI Agent Chat ───────────────────────────────────────────────────────
+app.post('/api/ai/chat', async (c) => {
+  const { agent, message } = await c.req.json()
+  const response = getAIAgentResponse(agent, message)
+  return c.json({ success: true, data: response })
+})
+
+// ── API: Notifications ───────────────────────────────────────────────────────
+app.get('/api/notifications', async (c) => {
+  return c.json({ success: true, data: getSmartAlerts() })
+})
+
+// ── API: Market Analytics ────────────────────────────────────────────────────
+app.get('/api/analytics', async (c) => {
+  const category = c.req.query('category') || 'all'
+  return c.json({ success: true, data: getAnalyticsData(category) })
+})
+
+// ── API: Marketplace Products ────────────────────────────────────────────────
+app.get('/api/marketplace', async (c) => {
+  const category = c.req.query('category') || 'all'
+  return c.json({ success: true, data: getMarketplaceProducts(category) })
+})
 
 export default app
 
@@ -201,6 +230,58 @@ const PRODUCT_POOL = [
 
   // Pet Supplies
   { id:'p033', title:'Automatic Pet Feeder 4L Smart WiFi', category:'Pet Supplies', supplierPrice:1080, sellingPrice:3299, platform:'AliExpress', image:'https://images.unsplash.com/photo-1601758174114-e711c0cbaa69?w=400&q=80', demand:81, competition:43, trend:'+20%', sales:3890, reviews:987, rating:4.4, description:'4L capacity, 1-4 meals/day schedule, voice recording, app control, anti-jamming motor.' },
+
+  // Jewelry
+  { id:'p034', title:'Gold Plated Kundan Necklace Set', category:'Jewelry', supplierPrice:320, sellingPrice:999, platform:'IndiaMart', image:'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=400&q=80', demand:88, competition:65, trend:'+26%', sales:9800, reviews:2876, rating:4.5, description:'Traditional Kundan work, gold-plated brass, includes earrings, adjustable chain, bridal & festive wear.' },
+  { id:'p035', title:'Silver Oxidized Boho Bangles Set', category:'Jewelry', supplierPrice:120, sellingPrice:399, platform:'IndiaMart', image:'https://images.unsplash.com/photo-1611591437281-460bfbe1220a?w=400&q=80', demand:84, competition:60, trend:'+19%', sales:14200, reviews:4123, rating:4.4, description:'Set of 12 oxidized silver bangles, bohemian design, nickel-free, fits sizes S/M/L.' },
+  { id:'p036', title:'Diamond Cut Stud Earrings Sterling Silver', category:'Jewelry', supplierPrice:180, sellingPrice:599, platform:'Flipkart', image:'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=400&q=80', demand:86, competition:68, trend:'+22%', sales:11500, reviews:3210, rating:4.6, description:'925 sterling silver, AAA cubic zirconia, hypoallergenic, push-back clasp, gift box included.' },
+
+  // Food & Grocery
+  { id:'p037', title:'Organic Cold Pressed Coconut Oil 500ml', category:'Food & Grocery', supplierPrice:180, sellingPrice:549, platform:'Amazon India', image:'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=400&q=80', demand:89, competition:70, trend:'+28%', sales:18700, reviews:6543, rating:4.5, description:'100% organic, cold-pressed, virgin coconut oil, FSSAI certified, glass jar, multipurpose use.' },
+  { id:'p038', title:'Himalayan Pink Salt 1kg Natural', category:'Food & Grocery', supplierPrice:90, sellingPrice:299, platform:'Amazon India', image:'https://images.unsplash.com/photo-1518110925495-5fe2fda0442c?w=400&q=80', demand:82, competition:62, trend:'+15%', sales:22000, reviews:7890, rating:4.4, description:'Pure Himalayan rock salt, unprocessed, rich in minerals, food grade, resealable pouch.' },
+  { id:'p039', title:'Protein Shaker Bottle 700ml BPA Free', category:'Food & Grocery', supplierPrice:120, sellingPrice:399, platform:'Flipkart', image:'https://images.unsplash.com/photo-1593095948071-474c5cc2989d?w=400&q=80', demand:85, competition:67, trend:'+20%', sales:16400, reviews:5231, rating:4.3, description:'700ml capacity, mixing ball, leak-proof lid, wide mouth, BPA-free Tritan material, dishwasher safe.' },
+
+  // Garden
+  { id:'p040', title:'Drip Irrigation Kit 50 Plant DIY', category:'Garden', supplierPrice:320, sellingPrice:999, platform:'Amazon India', image:'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=400&q=80', demand:78, competition:42, trend:'+31%', sales:5600, reviews:1432, rating:4.4, description:'Supports 50 plants, adjustable drippers, timer-compatible, UV-resistant tubing, complete kit.' },
+  { id:'p041', title:'Garden Tool Set 5-Piece Stainless Steel', category:'Garden', supplierPrice:280, sellingPrice:899, platform:'IndiaMart', image:'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=400&q=80', demand:75, competition:38, trend:'+18%', sales:4300, reviews:987, rating:4.3, description:'5pc set: trowel, cultivator, weeder, transplanter, hand fork, ergonomic rubber grip, rust-resistant.' },
+  { id:'p042', title:'LED Grow Light Full Spectrum 45W', category:'Garden', supplierPrice:580, sellingPrice:1799, platform:'AliExpress', image:'https://images.unsplash.com/photo-1585664811641-cf19a9cb7f3e?w=400&q=80', demand:80, competition:45, trend:'+35%', sales:3200, reviews:876, rating:4.2, description:'45W full spectrum, red+blue+white LEDs, veg/bloom switches, adjustable arms, covers 3x3ft grow area.' },
+
+  // Tools
+  { id:'p043', title:'Digital Multimeter Auto-Ranging Pro', category:'Tools', supplierPrice:420, sellingPrice:1299, platform:'Amazon India', image:'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=400&q=80', demand:76, competition:48, trend:'+14%', sales:4800, reviews:1234, rating:4.5, description:'Auto-ranging, 6000 count display, True RMS, DC/AC voltage & current, resistance, capacitance, temp.' },
+  { id:'p044', title:'Cordless Drill Driver 12V Lithium', category:'Tools', supplierPrice:890, sellingPrice:2799, platform:'Amazon India', image:'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=400&q=80', demand:82, competition:55, trend:'+19%', sales:6700, reviews:1987, rating:4.4, description:'12V Li-ion, 2 speed gearbox, 18+1 torque settings, LED light, 2 batteries included, fast charger.' },
+  { id:'p045', title:'Cable Organizer Kit 50pcs Velcro', category:'Tools', supplierPrice:89, sellingPrice:299, platform:'AliExpress', image:'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&q=80', demand:86, competition:72, trend:'+23%', sales:28000, reviews:8765, rating:4.6, description:'50 reusable velcro cable ties, desk & home organizer, 10 sizes, black, works for all cables.' },
+
+  // Books / Stationery
+  { id:'p046', title:'Dotted Notebook A5 Bullet Journal', category:'Books', supplierPrice:120, sellingPrice:399, platform:'Amazon India', image:'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400&q=80', demand:84, competition:65, trend:'+21%', sales:19800, reviews:6543, rating:4.5, description:'A5 size, 200 dotted pages, 120gsm paper, lay-flat binding, pen loop, bookmark ribbon, hardcover.' },
+  { id:'p047', title:'Acrylic Paint Set 48 Colors 12ml', category:'Books', supplierPrice:280, sellingPrice:899, platform:'Amazon India', image:'https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=400&q=80', demand:81, competition:58, trend:'+18%', sales:12000, reviews:3456, rating:4.4, description:'48 vivid colors, non-toxic, water-soluble, suitable for canvas, wood, fabric, canvas pads included.' },
+
+  // More Electronics
+  { id:'p048', title:'Wireless Charging Pad 15W Fast Qi', category:'Electronics', supplierPrice:180, sellingPrice:599, platform:'AliExpress', image:'https://images.unsplash.com/photo-1609091839311-d5365f9ff1c5?w=400&q=80', demand:90, competition:71, trend:'+29%', sales:15600, reviews:4321, rating:4.4, description:'15W Qi fast wireless charging, compatible with iPhone/Samsung/Pixel, LED indicator, anti-slip.' },
+  { id:'p049', title:'Mechanical Keyboard Numpad 19-key RGB', category:'Electronics', supplierPrice:350, sellingPrice:1099, platform:'AliExpress', image:'https://images.unsplash.com/photo-1511467687858-23d96c32e4ae?w=400&q=80', demand:77, competition:50, trend:'+17%', sales:5400, reviews:1234, rating:4.3, description:'19-key standalone numpad, mechanical switches, RGB backlight, plug & play USB, compact aluminum frame.' },
+  { id:'p050', title:'Smart Power Strip 4-Outlet USB', category:'Electronics', supplierPrice:420, sellingPrice:1299, platform:'Amazon India', image:'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&q=80', demand:88, competition:68, trend:'+25%', sales:11000, reviews:3210, rating:4.5, description:'4 AC outlets + 4 USB ports, individually switchable, surge protector, overload protection, 1.5m cord.' },
+  { id:'p051', title:'Laptop Stand Adjustable Aluminum', category:'Electronics', supplierPrice:480, sellingPrice:1499, platform:'Amazon India', image:'https://images.unsplash.com/photo-1593642632559-0c6d3fc62b89?w=400&q=80', demand:87, competition:64, trend:'+24%', sales:9800, reviews:2987, rating:4.5, description:'6 height angles, foldable, heat dissipation holes, non-slip silicone, universal 10-17" laptop fit.' },
+  { id:'p052', title:'Webcam 1080P HD with Microphone', category:'Electronics', supplierPrice:620, sellingPrice:1899, platform:'AliExpress', image:'https://images.unsplash.com/photo-1587826080692-f439cd0b70da?w=400&q=80', demand:85, competition:60, trend:'+22%', sales:8700, reviews:2543, rating:4.3, description:'1080P 30fps, built-in noise-cancelling mic, 90° FOV, plug & play, compatible with Zoom/Teams/Meet.' },
+
+  // More Beauty
+  { id:'p053', title:'Hair Straightener Ceramic Tourmaline', category:'Beauty', supplierPrice:480, sellingPrice:1499, platform:'AliExpress', image:'https://images.unsplash.com/photo-1522338242992-e1a54906a8da?w=400&q=80', demand:88, competition:69, trend:'+26%', sales:12300, reviews:3876, rating:4.4, description:'Ceramic-tourmaline plates, 160-230°C adjustable, MCH heater, 30s heat-up, auto shutoff, dual voltage.' },
+  { id:'p054', title:'Face Wash Neem Tulsi Oil Control 100ml', category:'Beauty', supplierPrice:80, sellingPrice:249, platform:'Amazon India', image:'https://images.unsplash.com/photo-1556228841-a3c527ebefe5?w=400&q=80', demand:91, competition:78, trend:'+30%', sales:28000, reviews:9876, rating:4.5, description:'Neem + Tulsi + Aloe vera, SLS-free, paraben-free, for oily/combination skin, FSSAI certified.' },
+  { id:'p055', title:'Eyebrow Microblading Pen Waterproof', category:'Beauty', supplierPrice:90, sellingPrice:299, platform:'AliExpress', image:'https://images.unsplash.com/photo-1522338242992-e1a54906a8da?w=400&q=80', demand:86, competition:62, trend:'+32%', sales:19000, reviews:5432, rating:4.3, description:'Hair-stroke microblading tip, waterproof, smudge-proof, 24hr wear, 3 shades available.' },
+
+  // More Home & Kitchen
+  { id:'p056', title:'Bamboo Cutting Board Set 3-Piece', category:'Home & Kitchen', supplierPrice:280, sellingPrice:899, platform:'Amazon India', image:'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&q=80', demand:83, competition:62, trend:'+16%', sales:13400, reviews:4123, rating:4.5, description:'3 sizes, organic bamboo, juice groove, easy-grip handle, antimicrobial, dishwasher safe (top rack).' },
+  { id:'p057', title:'Electric Kettle 1.5L Glass Double Wall', category:'Home & Kitchen', supplierPrice:580, sellingPrice:1799, platform:'Flipkart', image:'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400&q=80', demand:85, competition:66, trend:'+20%', sales:9800, reviews:2987, rating:4.4, description:'1.5L borosilicate glass, 1500W fast boil, 360° base, auto shutoff, dry protection, BPA-free.' },
+
+  // More Sports
+  { id:'p058', title:'Adjustable Dumbbell Set 2-24kg', category:'Sports', supplierPrice:2800, sellingPrice:7999, platform:'Amazon India', image:'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&q=80', demand:89, competition:52, trend:'+38%', sales:4300, reviews:1234, rating:4.6, description:'Adjustable 2-24kg per dumbbell, 8 weight settings, replaces 8 pairs, space-saving, ergonomic handle.' },
+  { id:'p059', title:'Knee Support Compression Sleeve Pair', category:'Sports', supplierPrice:120, sellingPrice:399, platform:'Amazon India', image:'https://images.unsplash.com/photo-1518611012118-696072aa579a?w=400&q=80', demand:87, competition:65, trend:'+22%', sales:21000, reviews:6543, rating:4.4, description:'Medical grade compression, sizes S-XXL, moisture-wicking, seamless knit, suitable for running/gym.' },
+
+  // More Health
+  { id:'p060', title:'Infrared Thermometer Non-Contact Digital', category:'Health', supplierPrice:280, sellingPrice:899, platform:'Amazon India', image:'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=400&q=80', demand:90, competition:62, trend:'+27%', sales:13200, reviews:4321, rating:4.5, description:'Non-contact infrared, 0.5s reading, ±0.2°C accuracy, fever alarm, 35-measurement memory, dual mode.' },
+  { id:'p061', title:'Whey Protein Isolate 1kg Chocolate', category:'Health', supplierPrice:890, sellingPrice:2499, platform:'Amazon India', image:'https://images.unsplash.com/photo-1593095948071-474c5cc2989d?w=400&q=80', demand:92, competition:74, trend:'+34%', sales:16800, reviews:5432, rating:4.5, description:'24g protein per serving, <1g sugar, BCAA 5.5g, chocolate flavor, FSSAI certified, 30 servings.' },
+
+  // More Fashion
+  { id:'p062', title:'Oversized Hoodie Unisex Cotton Blend', category:'Fashion', supplierPrice:280, sellingPrice:899, platform:'Flipkart', image:'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&q=80', demand:91, competition:73, trend:'+35%', sales:24000, reviews:7654, rating:4.5, description:'320gsm cotton blend, oversized fit, kangaroo pocket, ribbed cuffs, sizes XS-3XL, 12 colors.' },
+  { id:'p063', title:'Tote Bag Canvas Large Aesthetic', category:'Fashion', supplierPrice:120, sellingPrice:399, platform:'IndiaMart', image:'https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=400&q=80', demand:87, competition:68, trend:'+28%', sales:19000, reviews:5678, rating:4.4, description:'Heavy-duty 12oz canvas, 42x38cm, zipper pocket, inner pouch, 20+ design prints, eco-friendly.' },
 ]
 
 // ── Semantic Search Engine ───────────────────────────────────────────────────
@@ -332,6 +413,36 @@ const PRODUCT_TAGS: Record<string, string[]> = {
   'p031': ['dashcam', 'dash camera', 'car camera', 'car dashcam', 'driving recorder', 'car dvr'],
   'p032': ['baby monitor', 'baby camera', 'infant monitor', 'nursery camera', 'baby surveillance'],
   'p033': ['pet feeder', 'dog feeder', 'cat feeder', 'automatic pet feeder', 'pet food dispenser'],
+  'p034': ['necklace', 'kundan', 'gold necklace', 'jewelry set', 'bridal jewelry', 'festive jewelry'],
+  'p035': ['bangles', 'bangle set', 'oxidized silver', 'boho jewelry', 'silver bangles'],
+  'p036': ['earrings', 'stud earrings', 'diamond earrings', 'silver earrings', 'zirconia earrings'],
+  'p037': ['coconut oil', 'cold pressed oil', 'organic oil', 'cooking oil', 'natural oil'],
+  'p038': ['pink salt', 'himalayan salt', 'rock salt', 'natural salt', 'mineral salt'],
+  'p039': ['shaker bottle', 'protein shaker', 'gym bottle', 'sports bottle', 'blender bottle'],
+  'p040': ['drip irrigation', 'garden irrigation', 'plant watering', 'irrigation kit', 'watering system'],
+  'p041': ['garden tools', 'gardening set', 'plant tools', 'trowel set', 'garden kit'],
+  'p042': ['grow light', 'plant light', 'led grow light', 'indoor plant light', 'grow lamp'],
+  'p043': ['multimeter', 'digital multimeter', 'voltage tester', 'electrical tester', 'clamp meter'],
+  'p044': ['cordless drill', 'power drill', 'drill driver', 'lithium drill', 'electric drill'],
+  'p045': ['cable organizer', 'cable management', 'velcro ties', 'cord organizer', 'wire organizer'],
+  'p046': ['notebook', 'bullet journal', 'dotted notebook', 'journal', 'stationery'],
+  'p047': ['acrylic paint', 'paint set', 'art supplies', 'craft paint', 'art colors'],
+  'p048': ['wireless charger', 'charging pad', 'qi charger', 'fast wireless charger', 'phone charger pad'],
+  'p049': ['numpad', 'number pad', 'keypad', 'mechanical numpad', 'rgb numpad'],
+  'p050': ['power strip', 'extension board', 'surge protector', 'usb power strip', 'smart power strip'],
+  'p051': ['laptop stand', 'notebook stand', 'monitor stand', 'desk stand', 'aluminum stand'],
+  'p052': ['webcam', 'web camera', 'hd webcam', 'streaming camera', 'usb webcam'],
+  'p053': ['hair straightener', 'flat iron', 'hair iron', 'ceramic straightener', 'hair styling'],
+  'p054': ['face wash', 'neem facewash', 'oil control cleanser', 'herbal face wash', 'skin cleanser'],
+  'p055': ['eyebrow pen', 'brow pen', 'microblading pen', 'eyebrow pencil', 'brow filler'],
+  'p056': ['cutting board', 'chopping board', 'bamboo board', 'kitchen board', 'wood cutting board'],
+  'p057': ['electric kettle', 'glass kettle', 'tea kettle', 'hot water kettle', 'water boiler'],
+  'p058': ['dumbbell', 'adjustable dumbbell', 'dumbbell set', 'home gym weights', 'free weights'],
+  'p059': ['knee support', 'knee sleeve', 'compression knee', 'knee guard', 'knee brace'],
+  'p060': ['thermometer', 'infrared thermometer', 'forehead thermometer', 'digital thermometer', 'non contact thermometer'],
+  'p061': ['whey protein', 'protein powder', 'protein isolate', 'gym supplement', 'bodybuilding protein'],
+  'p062': ['hoodie', 'oversized hoodie', 'sweatshirt', 'pullover', 'unisex hoodie'],
+  'p063': ['tote bag', 'canvas bag', 'shoulder bag', 'shopping bag', 'eco bag'],
 }
 
 // Core semantic scorer — returns a relevance score for a product vs query
@@ -806,6 +917,157 @@ function getDashboardStats() {
   }
 }
 
+// ── AI Agent Response Engine ─────────────────────────────────────────────────
+function getAIAgentResponse(agent: string, message: string): any {
+  const msg = message.toLowerCase()
+  const responses: Record<string, string[]> = {
+    trend: [
+      `📈 Based on current data, **${message}** is showing +${Math.round(15+Math.random()*40)}% search interest growth in India over the last 30 days. Peak regions: Maharashtra, Delhi, Karnataka.`,
+      `🔥 Trend analysis for **${message}**: This niche is in the early growth phase. Search volume up ${Math.round(20+Math.random()*50)}% MoM. Recommend entering now before saturation.`,
+      `📊 I analyzed 9 data sources for **${message}**. Google Trends shows rising momentum. Instagram hashtag volume: +${Math.round(30+Math.random()*60)}%. TikTok mentions: ${Math.round(50+Math.random()*200)}K/week.`,
+    ],
+    supplier: [
+      `🏭 Found 12 verified suppliers for **${message}**. Top recommendation: Shenzhen TechTrend Co. (★4.8, MOQ 50, lead time 7 days, $${Math.round(2+Math.random()*8)}/unit).`,
+      `✅ Supplier intelligence for **${message}**: AliExpress has 3 Gold Suppliers with 4.5+ ratings. Alibaba shows 8 verified factories. Recommend requesting samples from 2-3 before bulk order.`,
+      `📦 Best sourcing options for **${message}**: China suppliers offer ₹${Math.round(200+Math.random()*500)}/unit (MOQ 100). IndiaMart has local options at ₹${Math.round(300+Math.random()*700)}/unit (MOQ 10, faster delivery).`,
+    ],
+    seo: [
+      `🔍 SEO analysis for **${message}**: Primary keyword has ${Math.round(5000+Math.random()*50000)} monthly searches in India. Long-tail opportunities: "${message} buy online" (${Math.round(1000+Math.random()*5000)}/mo), "${message} price" (${Math.round(2000+Math.random()*8000)}/mo).`,
+      `📝 Recommended listing title for **${message}**: Include brand + feature + size/color + use case. Optimal description length: 150-250 words. Add 8-10 bullet points with key benefits.`,
+      `🏆 Top Amazon keywords for **${message}**: Use "best ${message}", "buy ${message} india", "${message} under ₹${Math.round(500+Math.random()*2000)}". Backend keywords: add Hindi transliterations for 30% more reach.`,
+    ],
+    research: [
+      `🔬 Market research complete for **${message}**: Total addressable market in India: ₹${Math.round(50+Math.random()*500)} Crore. Growing at ${Math.round(15+Math.random()*35)}% CAGR. Top 3 competitors: Amazon (42% share), Flipkart (28%), Meesho (18%).`,
+      `📋 Consumer insights for **${message}**: Primary buyer age 22-35 (62%). Purchase triggers: influencer recommendation (38%), price deal (29%), need replacement (22%). Average return rate: ${Math.round(5+Math.random()*15)}%.`,
+      `💡 Opportunity scoring for **${message}**: Demand score 85/100, Competition 42/100, Margin potential 68/100. Overall opportunity: STRONG. Recommended entry budget: ₹${Math.round(10+Math.random()*40)}K.`,
+    ],
+    pricing: [
+      `💰 Pricing strategy for **${message}**: Market average ₹${Math.round(500+Math.random()*2000)}. Recommended entry price: ₹${Math.round(400+Math.random()*1800)} (8% below average). After 50+ reviews, move to ₹${Math.round(550+Math.random()*2200)}.`,
+      `📊 Price elasticity analysis for **${message}**: At ₹${Math.round(300+Math.random()*800)}, conversion rate ~${Math.round(3+Math.random()*8)}%. At ₹${Math.round(400+Math.random()*1000)}, drops to ~${Math.round(1+Math.random()*4)}%. Sweet spot identified at ₹${Math.round(350+Math.random()*900)}.`,
+      `🎯 Dynamic pricing recommendation for **${message}**: Base price ₹X. Add 15% during peak season (Oct-Dec). Drop 10% in slow months (Feb-Mar). Bundle pricing: 2x = 5% discount boosts units/order by 40%.`,
+    ],
+    competitor: [
+      `🔍 Competitor analysis for **${message}**: Found ${Math.round(30+Math.random()*100)} active sellers. Top seller has ${Math.round(1000+Math.random()*5000)} reviews (★${(3.8+Math.random()*1.2).toFixed(1)}), monthly revenue est. ₹${Math.round(2+Math.random()*15)} Lakh.`,
+      `⚔️ Competitive gap analysis for **${message}**: 73% of competitors have <200 reviews — low review barrier to enter. Average product age: 18 months. Opportunity: Better images + A+ content can outrank established sellers.`,
+      `📈 Competitor ad strategy for **${message}**: Top sellers spending est. ₹${Math.round(10+Math.random()*50)}K/month on ads. Target ACoS 25-35%. Suggested bid: ₹${Math.round(5+Math.random()*25)}/click for primary keyword.`,
+    ],
+  }
+  const agentResponses = responses[agent] || responses['trend']
+  const randomResponse = agentResponses[Math.floor(Math.random() * agentResponses.length)]
+  return {
+    agent,
+    query: message,
+    response: randomResponse,
+    confidence: Math.round(75 + Math.random() * 20),
+    processingTime: Math.round(800 + Math.random() * 1200),
+    sources: Math.round(3 + Math.random() * 6),
+    timestamp: new Date().toISOString(),
+  }
+}
+
+// ── Smart Alerts Engine ──────────────────────────────────────────────────────
+function getSmartAlerts() {
+  const now = new Date()
+  return [
+    { id: 'a1', type: 'viral', priority: 'high', icon: 'fa-fire', color: 'red', title: 'Viral Alert: Wireless Earbuds', message: 'Search volume for "wireless earbuds under 1000" spiked +234% in last 6 hours across India.', time: '2 min ago', action: 'Find Suppliers', actionUrl: '/supplier-finder?product=wireless+earbuds', read: false },
+    { id: 'a2', type: 'price', priority: 'medium', icon: 'fa-tag', color: 'green', title: 'Price Drop Opportunity', message: 'AliExpress supplier for Yoga Mat dropped price from ₹280 to ₹210. Your margin just improved by 8%.', time: '15 min ago', action: 'View Product', actionUrl: '/product-finder?q=yoga+mat', read: false },
+    { id: 'a3', type: 'competitor', priority: 'high', icon: 'fa-binoculars', color: 'orange', title: 'Competitor Launched Viral Ad', message: 'SellerA just launched a Meta ad for Vitamin C Serum — 2.3M impressions in 24hrs. Enter now before saturation.', time: '32 min ago', action: 'Analyze', actionUrl: '/competitor-tracker', read: false },
+    { id: 'a4', type: 'trend', priority: 'medium', icon: 'fa-chart-line', color: 'indigo', title: 'Rising Trend: LED Grow Lights', message: 'Google Trends shows +187% growth for "indoor plant lights" this month. Zero competition on Meesho.', time: '1 hr ago', action: 'Analyze Trend', actionUrl: '/trend-analyzer', read: true },
+    { id: 'a5', type: 'supplier', priority: 'low', icon: 'fa-truck', color: 'cyan', title: 'New Verified Supplier Added', message: 'Mumbai Wholesale Hub (★4.9) is now offering Blood Pressure Monitors at ₹590/unit, MOQ 20 units.', time: '2 hr ago', action: 'Contact', actionUrl: '/supplier-finder?product=blood+pressure', read: true },
+    { id: 'a6', type: 'seasonal', priority: 'medium', icon: 'fa-calendar', color: 'purple', title: 'Seasonal Alert: Monsoon Products', message: 'Rain gear, waterproof bags, and umbrellas will peak in 3 weeks. Pre-source inventory now to avoid stockouts.', time: '3 hr ago', action: 'Find Products', actionUrl: '/product-finder?q=waterproof', read: true },
+    { id: 'a7', type: 'viral', priority: 'high', icon: 'fa-bolt', color: 'yellow', title: 'TikTok Viral: Jade Roller', message: '#JadeRoller trending with 8.2M views on TikTok India. Flipkart stock running low — source now.', time: '4 hr ago', action: 'Source Now', actionUrl: '/supplier-finder?product=jade+roller', read: true },
+    { id: 'a8', type: 'insight', priority: 'low', icon: 'fa-lightbulb', color: 'green', title: 'Weekly AI Insight Ready', message: 'Your weekly market intelligence report is ready. Top 5 opportunities this week in Beauty & Electronics.', time: '6 hr ago', action: 'Read Report', actionUrl: '/analytics', read: true },
+  ]
+}
+
+// ── Analytics Data Engine ────────────────────────────────────────────────────
+function getAnalyticsData(category: string) {
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+  const currentMonth = new Date().getMonth()
+
+  // Generate 12-month revenue forecast
+  const revenueData = months.map((m, i) => {
+    const idx = (currentMonth - 11 + i + 12) % 12
+    const base = 45000 + Math.round(Math.random() * 30000)
+    const seasonal = [1.0, 0.85, 0.9, 1.0, 0.95, 0.9, 0.95, 1.1, 1.2, 1.5, 1.8, 1.6][idx]
+    return { month: months[idx], value: Math.round(base * seasonal), forecast: i >= 9 }
+  })
+
+  // India state heatmap data
+  const stateData = [
+    { state: 'Maharashtra', value: Math.round(80+Math.random()*20), city: 'Mumbai' },
+    { state: 'Delhi', value: Math.round(75+Math.random()*20), city: 'New Delhi' },
+    { state: 'Karnataka', value: Math.round(70+Math.random()*20), city: 'Bangalore' },
+    { state: 'Tamil Nadu', value: Math.round(65+Math.random()*20), city: 'Chennai' },
+    { state: 'Telangana', value: Math.round(60+Math.random()*20), city: 'Hyderabad' },
+    { state: 'Gujarat', value: Math.round(55+Math.random()*20), city: 'Ahmedabad' },
+    { state: 'West Bengal', value: Math.round(50+Math.random()*20), city: 'Kolkata' },
+    { state: 'Rajasthan', value: Math.round(45+Math.random()*20), city: 'Jaipur' },
+    { state: 'Uttar Pradesh', value: Math.round(55+Math.random()*20), city: 'Lucknow' },
+    { state: 'Punjab', value: Math.round(40+Math.random()*20), city: 'Chandigarh' },
+    { state: 'Kerala', value: Math.round(60+Math.random()*15), city: 'Kochi' },
+    { state: 'Madhya Pradesh', value: Math.round(35+Math.random()*20), city: 'Bhopal' },
+  ]
+
+  // Category growth
+  const categoryGrowth = [
+    { category: 'Beauty', growth: 35, revenue: 4280000, products: 8 },
+    { category: 'Electronics', growth: 28, revenue: 8760000, products: 14 },
+    { category: 'Health', growth: 30, revenue: 3450000, products: 6 },
+    { category: 'Sports', growth: 24, revenue: 2340000, products: 7 },
+    { category: 'Fashion', growth: 22, revenue: 5670000, products: 8 },
+    { category: 'Home & Kitchen', growth: 18, revenue: 3210000, products: 7 },
+    { category: 'Jewelry', growth: 26, revenue: 1980000, products: 3 },
+    { category: 'Tools', growth: 19, revenue: 1230000, products: 3 },
+  ]
+
+  // Top performing products by revenue
+  const topProducts = PRODUCT_POOL.slice(0, 8).map(p => ({
+    title: p.title.substring(0, 30) + '...',
+    revenue: Math.round(p.sales * p.sellingPrice * 0.1),
+    units: Math.round(p.sales * 0.08),
+    growth: p.trend,
+    demand: p.demand,
+  }))
+
+  return {
+    revenueData,
+    stateData,
+    categoryGrowth,
+    topProducts,
+    totalRevenue: revenueData.slice(0, 9).reduce((s, d) => s + d.value, 0),
+    avgGrowth: Math.round(categoryGrowth.reduce((s, c) => s + c.growth, 0) / categoryGrowth.length),
+    bestState: stateData.sort((a, b) => b.value - a.value)[0].state,
+    bestCategory: categoryGrowth.sort((a, b) => b.growth - a.growth)[0].category,
+  }
+}
+
+// ── Marketplace Products ─────────────────────────────────────────────────────
+function getMarketplaceProducts(category: string) {
+  const pool = category === 'all'
+    ? PRODUCT_POOL
+    : PRODUCT_POOL.filter(p => p.category.toLowerCase() === category.toLowerCase())
+
+  return pool.slice(0, 24).map(p => {
+    const enriched = enrichProduct(p, '')
+    const platforms = [
+      { name: 'Amazon India', price: p.sellingPrice, commission: 8, url: `https://www.amazon.in/s?k=${encodeURIComponent(p.title)}`, color: 'src-amazon' },
+      { name: 'Flipkart', price: Math.round(p.sellingPrice * (0.9 + Math.random() * 0.15)), commission: 6, url: `https://www.flipkart.com/search?q=${encodeURIComponent(p.title)}`, color: 'src-flipkart' },
+      { name: 'Meesho', price: Math.round(p.sellingPrice * (0.8 + Math.random() * 0.1)), commission: 4, url: `https://meesho.com/search?q=${encodeURIComponent(p.title)}`, color: 'badge-purple' },
+    ]
+    const bestPrice = Math.min(...platforms.map(pf => pf.price))
+    const commissionEarned = Math.round(bestPrice * platforms[0].commission / 100)
+    return {
+      ...enriched,
+      platforms,
+      bestPrice,
+      commissionEarned,
+      estimatedCommission: Math.round(commissionEarned * (50 + Math.random() * 200)),
+      affiliateTag: `PM-${p.id.toUpperCase()}`,
+    }
+  })
+}
+
 // ════════════════════════════════════════════════════════════════════════════
 // HTML PAGE GENERATORS
 // ════════════════════════════════════════════════════════════════════════════
@@ -985,48 +1247,87 @@ ${content}
 }
 
 function getSidebar(activePage: string) {
-  const navItems = [
-    { href: '/', icon: 'fa-home', label: 'Home', id: 'home' },
-    { href: '/dashboard', icon: 'fa-chart-line', label: 'Dashboard', id: 'dashboard' },
-    { href: '/product-finder', icon: 'fa-search', label: 'Product Finder', id: 'product-finder' },
-    { href: '/trend-analyzer', icon: 'fa-fire', label: 'Trend Analyzer', id: 'trend-analyzer' },
-    { href: '/viral-products', icon: 'fa-bolt', label: 'Viral Products', id: 'viral-products' },
-    { href: '/profit-calculator', icon: 'fa-calculator', label: 'Profit Calculator', id: 'profit-calculator' },
-    { href: '/competitor-tracker', icon: 'fa-binoculars', label: 'Competitor Tracker', id: 'competitor-tracker' },
-    { href: '/supplier-finder', icon: 'fa-truck', label: 'Supplier Finder', id: 'supplier-finder' },
-    { href: '/pricing', icon: 'fa-gem', label: 'Pricing', id: 'pricing' },
+  const navGroups = [
+    {
+      label: 'INTELLIGENCE',
+      items: [
+        { href: '/', icon: 'fa-home', label: 'Home', id: 'home' },
+        { href: '/dashboard', icon: 'fa-chart-line', label: 'Dashboard', id: 'dashboard' },
+        { href: '/analytics', icon: 'fa-chart-bar', label: 'Analytics Engine', id: 'analytics', badge: 'NEW' },
+        { href: '/notifications', icon: 'fa-bell', label: 'Smart Alerts', id: 'notifications', badge: '8' },
+      ]
+    },
+    {
+      label: 'DISCOVERY',
+      items: [
+        { href: '/product-finder', icon: 'fa-search', label: 'Product Finder', id: 'product-finder' },
+        { href: '/trend-analyzer', icon: 'fa-fire', label: 'Trend Analyzer', id: 'trend-analyzer' },
+        { href: '/viral-products', icon: 'fa-bolt', label: 'Viral Products', id: 'viral-products', badge: 'HOT' },
+        { href: '/shopping', icon: 'fa-shopping-bag', label: 'Shopping Mode', id: 'shopping', badge: 'NEW' },
+      ]
+    },
+    {
+      label: 'AI TOOLS',
+      items: [
+        { href: '/ai-agents', icon: 'fa-robot', label: 'AI Agents', id: 'ai-agents', badge: 'AI' },
+        { href: '/competitor-tracker', icon: 'fa-binoculars', label: 'Competitor Tracker', id: 'competitor-tracker' },
+        { href: '/supplier-finder', icon: 'fa-truck', label: 'Supplier Finder', id: 'supplier-finder' },
+        { href: '/profit-calculator', icon: 'fa-calculator', label: 'Profit Calculator', id: 'profit-calculator' },
+      ]
+    },
+    {
+      label: 'COMMERCE',
+      items: [
+        { href: '/marketplace', icon: 'fa-store', label: 'Marketplace', id: 'marketplace', badge: 'NEW' },
+        { href: '/pricing', icon: 'fa-gem', label: 'Pricing', id: 'pricing' },
+      ]
+    },
   ]
 
+  const badgeColors: Record<string,string> = {
+    'HOT': 'bg-red-600', 'NEW': 'bg-green-600', 'AI': 'bg-purple-600',
+  }
+
   return `
-<aside class="sidebar flex flex-col">
+<aside class="sidebar flex flex-col" id="main-sidebar">
   <div class="p-5 border-b border-slate-700">
     <a href="/" class="flex items-center gap-3">
       <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-lg font-bold">P</div>
       <div>
         <div class="font-bold text-white text-sm">PulseMarket</div>
-        <div class="text-xs text-slate-500">India Intelligence</div>
+        <div class="text-xs text-slate-500">AI Commerce Intelligence</div>
       </div>
     </a>
   </div>
 
   <div class="flex items-center gap-2 mx-4 my-3 px-3 py-2 rounded-lg bg-green-900/20 border border-green-800/40">
     <span class="live-dot"></span>
-    <span class="text-xs text-green-400 font-medium">Live Data Active</span>
+    <span class="text-xs text-green-400 font-medium">Live • 63 Products Tracked</span>
   </div>
 
   <nav class="flex-1 py-2 overflow-y-auto">
-    ${navItems.map(item => `
+    ${navGroups.map(group => `
+    <div class="px-4 pt-3 pb-1">
+      <div class="text-xs font-bold text-slate-600 tracking-widest">${group.label}</div>
+    </div>
+    ${group.items.map(item => {
+      const badgeNum = !isNaN(Number(item.badge)) && item.badge
+      const badgeText = isNaN(Number(item.badge)) && item.badge ? item.badge : null
+      const badgeBg = badgeColors[item.badge || ''] || 'bg-indigo-600'
+      return `
     <a href="${item.href}" class="nav-item ${activePage === item.id ? 'active' : ''}">
       <i class="fas ${item.icon}"></i>
       <span>${item.label}</span>
-      ${item.id === 'viral-products' ? '<span class="ml-auto badge badge-red text-xs px-1">HOT</span>' : ''}
-    </a>`).join('')}
+      ${badgeNum ? `<span class="ml-auto text-xs bg-red-600 text-white font-bold rounded-full w-5 h-5 flex items-center justify-center">${item.badge}</span>` : ''}
+      ${badgeText ? `<span class="ml-auto text-xs ${badgeBg} text-white font-bold px-1.5 py-0.5 rounded">${item.badge}</span>` : ''}
+    </a>`
+    }).join('')}`).join('')}
   </nav>
 
   <div class="p-4 border-t border-slate-700">
     <div class="rounded-xl bg-gradient-to-br from-indigo-900/50 to-purple-900/50 border border-indigo-700/30 p-4">
       <div class="text-xs font-bold text-white mb-1">🚀 Go Pro</div>
-      <div class="text-xs text-slate-400 mb-3">Unlock all 9 data sources + AI signals</div>
+      <div class="text-xs text-slate-400 mb-3">Unlock AI agents + full analytics + all sources</div>
       <a href="/pricing" class="btn-primary text-xs px-3 py-2 w-full justify-center">Upgrade Free →</a>
     </div>
   </div>
@@ -2944,6 +3245,1193 @@ function doSignup() {
 }
 </script>
 `, '')
+}
+
+// ── PAGE: SHOPPING MODE ───────────────────────────────────────────────────────
+function getShoppingPage() {
+  return getLayout('Shopping Mode', `
+<div class="main-content">
+  <div class="topbar flex justify-between items-center">
+    <div>
+      <h1 class="text-lg font-bold text-white flex items-center gap-2">
+        <i class="fas fa-shopping-bag text-pink-400"></i> Personal Shopping Mode
+      </h1>
+      <div class="text-xs text-slate-400 mt-0.5">Discover products · Compare prices · Save to wishlist · Earn commissions</div>
+    </div>
+    <div class="flex items-center gap-3">
+      <button onclick="toggleWishlist()" class="btn-outline text-sm relative">
+        <i class="fas fa-heart text-pink-400"></i> Wishlist
+        <span id="wishlist-count" class="absolute -top-1 -right-1 text-xs bg-pink-600 text-white rounded-full w-4 h-4 flex items-center justify-center">0</span>
+      </button>
+      <div id="auth-status"></div>
+    </div>
+  </div>
+
+  <div class="p-6">
+    <!-- Search & Filter Bar -->
+    <div class="card p-5 mb-6">
+      <div class="flex flex-col md:flex-row gap-4">
+        <div class="flex-1 relative">
+          <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+          <input id="shop-search" type="text" placeholder="Search products to compare prices..." class="input pl-10" oninput="debounceSearch()" />
+        </div>
+        <select id="shop-category" class="select" onchange="loadShopProducts()">
+          <option value="all">All Categories</option>
+          ${CATEGORIES.map(c => `<option value="${c}">${c}</option>`).join('')}
+        </select>
+        <select id="shop-sort" class="select" onchange="sortShopProducts()">
+          <option value="demand">Most Popular</option>
+          <option value="price_asc">Price: Low → High</option>
+          <option value="price_desc">Price: High → Low</option>
+          <option value="margin">Best Margin</option>
+          <option value="trend">Trending</option>
+        </select>
+      </div>
+      <!-- Quick Categories -->
+      <div class="flex gap-2 mt-4 flex-wrap">
+        <span class="text-xs text-slate-400 self-center">Browse:</span>
+        ${['Electronics','Beauty','Fashion','Home & Kitchen','Sports','Health','Jewelry','Tools'].map(c =>
+          `<button onclick="quickShopCategory('${c}')" class="tab-btn text-xs px-3 py-1">${c}</button>`
+        ).join('')}
+      </div>
+    </div>
+
+    <!-- Stats Bar -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div class="stat-card text-center">
+        <div class="text-xl font-black text-indigo-400" id="shop-product-count">63</div>
+        <div class="text-xs text-slate-400 mt-1">Products Available</div>
+      </div>
+      <div class="stat-card text-center">
+        <div class="text-xl font-black text-green-400">3</div>
+        <div class="text-xs text-slate-400 mt-1">Platforms Compared</div>
+      </div>
+      <div class="stat-card text-center">
+        <div class="text-xl font-black text-purple-400" id="shop-wishlist-stat">0</div>
+        <div class="text-xs text-slate-400 mt-1">In Your Wishlist</div>
+      </div>
+      <div class="stat-card text-center">
+        <div class="text-xl font-black text-pink-400">Up to 8%</div>
+        <div class="text-xs text-slate-400 mt-1">Affiliate Commission</div>
+      </div>
+    </div>
+
+    <!-- Products Grid - Reels Style -->
+    <div id="shop-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 mb-6">
+      ${Array(8).fill('<div class="card h-96 shimmer rounded-xl"></div>').join('')}
+    </div>
+
+    <!-- Load More -->
+    <div class="text-center" id="load-more-wrap">
+      <button onclick="loadMoreShop()" class="btn-outline px-8 py-3"><i class="fas fa-chevron-down mr-2"></i>Load More Products</button>
+    </div>
+  </div>
+
+  <!-- Wishlist Drawer -->
+  <div id="wishlist-drawer" class="fixed right-0 top-0 h-full w-80 bg-slate-900 border-l border-slate-700 z-200 transform translate-x-full transition-transform duration-300 overflow-y-auto" style="z-index:200">
+    <div class="p-5 border-b border-slate-700 flex justify-between items-center sticky top-0 bg-slate-900">
+      <h3 class="font-bold text-white flex items-center gap-2"><i class="fas fa-heart text-pink-400"></i> Wishlist</h3>
+      <button onclick="toggleWishlist()" class="text-slate-400 hover:text-white"><i class="fas fa-times text-xl"></i></button>
+    </div>
+    <div id="wishlist-items" class="p-4 space-y-3"></div>
+    <div class="p-4 border-t border-slate-700 sticky bottom-0 bg-slate-900">
+      <button onclick="clearWishlist()" class="btn-outline w-full text-sm"><i class="fas fa-trash mr-2"></i>Clear Wishlist</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let shopProducts = [];
+let shopPage = 0;
+let shopWishlist = JSON.parse(localStorage.getItem('shop_wishlist') || '[]');
+let searchTimer = null;
+
+function debounceSearch() {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(loadShopProducts, 400);
+}
+
+async function loadShopProducts(reset = true) {
+  if (reset) { shopPage = 0; shopProducts = []; }
+  const q = document.getElementById('shop-search').value.trim() || 'trending';
+  const category = document.getElementById('shop-category').value;
+
+  if (reset) {
+    document.getElementById('shop-grid').innerHTML = Array(8).fill('<div class="card h-96 shimmer rounded-xl"></div>').join('');
+  }
+
+  try {
+    const { data } = await axios.get(\`/api/search?q=\${encodeURIComponent(q)}&category=\${encodeURIComponent(category)}&page=1&limit=24&source=all\`);
+    if (data.success) {
+      shopProducts = data.data.products;
+      renderShopGrid();
+      document.getElementById('shop-product-count').textContent = data.data.total;
+    }
+  } catch(e) { console.error(e); }
+}
+
+function sortShopProducts() {
+  const sort = document.getElementById('shop-sort').value;
+  const sorted = [...shopProducts];
+  if (sort === 'demand') sorted.sort((a,b) => b.demand - a.demand);
+  else if (sort === 'price_asc') sorted.sort((a,b) => a.sellingPrice - b.sellingPrice);
+  else if (sort === 'price_desc') sorted.sort((a,b) => b.sellingPrice - a.sellingPrice);
+  else if (sort === 'margin') sorted.sort((a,b) => b.margin - a.margin);
+  else if (sort === 'trend') sorted.sort((a,b) => parseFloat(b.trend) - parseFloat(a.trend));
+  shopProducts = sorted;
+  renderShopGrid();
+}
+
+function renderShopGrid() {
+  const grid = document.getElementById('shop-grid');
+  if (!shopProducts.length) {
+    grid.innerHTML = '<div class="col-span-4 text-center py-16 text-slate-400"><i class="fas fa-search text-5xl mb-4 block opacity-30"></i><div class="font-bold">No products found</div><div class="text-sm mt-1">Try a different search term</div></div>';
+    return;
+  }
+  grid.innerHTML = shopProducts.map(p => renderShopCard(p)).join('');
+  updateWishlistCount();
+}
+
+function renderShopCard(p) {
+  const srcClass = getSourceClass(p.platform);
+  const inWishlist = shopWishlist.find(w => w.id === p.id);
+  const amazonUrl = \`https://www.amazon.in/s?k=\${encodeURIComponent(p.title)}\`;
+  const flipkartUrl = \`https://www.flipkart.com/search?q=\${encodeURIComponent(p.title)}\`;
+  const meeshoUrl = \`https://meesho.com/search?q=\${encodeURIComponent(p.title)}\`;
+  const flipPrice = Math.round(p.sellingPrice * (0.92 + Math.random() * 0.12));
+  const meeshoPrice = Math.round(p.sellingPrice * (0.78 + Math.random() * 0.10));
+  const bestPrice = Math.min(p.sellingPrice, flipPrice, meeshoPrice);
+  const savings = p.sellingPrice - bestPrice;
+
+  return \`<div class="card overflow-hidden hover:border-pink-500 transition-all hover:-translate-y-1 group">
+    <div class="relative overflow-hidden" style="height:200px">
+      <img src="\${p.image}" alt="\${p.title}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.src='https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&q=80'">
+      <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+      <div class="absolute top-3 left-3"><span class="source-badge \${srcClass}">\${p.platform}</span></div>
+      <div class="absolute top-3 right-3">
+        <button onclick="toggleWishlistItem(\${JSON.stringify(p).replace(/\\\\/g,'\\\\\\\\').replace(/'/g,'&#39;').replace(/"/g,'&quot;')})" class="w-9 h-9 rounded-full flex items-center justify-center transition-all \${inWishlist ? 'bg-pink-600 text-white' : 'bg-black/50 text-white hover:bg-pink-600'}">
+          <i class="fas fa-heart text-sm"></i>
+        </button>
+      </div>
+      \${savings > 50 ? \`<div class="absolute bottom-3 left-3"><span class="badge badge-green text-xs">Save ₹\${savings}</span></div>\` : ''}
+      \${p.trend && parseFloat(p.trend) > 25 ? '<div class="absolute bottom-3 right-3"><span class="badge badge-purple text-xs">TRENDING</span></div>' : ''}
+    </div>
+
+    <div class="p-4">
+      <h3 class="text-sm font-bold text-white mb-1 leading-tight" style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">\${p.title}</h3>
+      <div class="flex items-center gap-1 mb-3">
+        <span class="text-yellow-400 text-xs">★★★★</span><span class="text-yellow-400 text-xs">\${(p.rating||4.3).toFixed(1)}</span>
+        <span class="text-slate-500 text-xs">(\${(p.reviews||1000).toLocaleString()})</span>
+      </div>
+
+      <!-- Price Comparison -->
+      <div class="bg-slate-800/60 rounded-xl p-3 mb-3 space-y-2">
+        <div class="text-xs text-slate-400 font-bold mb-1">Price Comparison</div>
+        <div class="flex justify-between items-center">
+          <span class="text-xs text-orange-400 font-bold">Amazon</span>
+          <div class="flex items-center gap-2">
+            <span class="text-sm font-black text-white">\${formatCurrency(p.sellingPrice)}</span>
+            \${p.sellingPrice === bestPrice ? '<span class="badge badge-green text-xs">BEST</span>' : ''}
+          </div>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-xs text-blue-400 font-bold">Flipkart</span>
+          <div class="flex items-center gap-2">
+            <span class="text-sm font-black text-white">\${formatCurrency(flipPrice)}</span>
+            \${flipPrice === bestPrice ? '<span class="badge badge-green text-xs">BEST</span>' : ''}
+          </div>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-xs text-purple-400 font-bold">Meesho</span>
+          <div class="flex items-center gap-2">
+            <span class="text-sm font-black text-white">\${formatCurrency(meeshoPrice)}</span>
+            \${meeshoPrice === bestPrice ? '<span class="badge badge-green text-xs">BEST</span>' : ''}
+          </div>
+        </div>
+      </div>
+
+      <!-- Buy Buttons -->
+      <div class="flex gap-2">
+        <a href="\${bestPrice === meeshoPrice ? meeshoUrl : bestPrice === flipPrice ? flipkartUrl : amazonUrl}" target="_blank"
+           class="flex-1 btn-primary text-xs py-2 justify-center">
+          <i class="fas fa-shopping-cart"></i> Best Deal
+        </a>
+        <button onclick="shareProduct('\${p.title}','\${p.sellingPrice}')" class="btn-outline px-3 py-2 text-xs">
+          <i class="fas fa-share-alt"></i>
+        </button>
+      </div>
+    </div>
+  </div>\`;
+}
+
+function toggleWishlistItem(p) {
+  const idx = shopWishlist.findIndex(w => w.id === p.id);
+  if (idx >= 0) {
+    shopWishlist.splice(idx, 1);
+    showToast('Removed from wishlist', 'info');
+  } else {
+    shopWishlist.push(p);
+    showToast('Added to wishlist! ❤️', 'success');
+  }
+  localStorage.setItem('shop_wishlist', JSON.stringify(shopWishlist));
+  updateWishlistCount();
+  renderShopGrid();
+  renderWishlistDrawer();
+}
+
+function updateWishlistCount() {
+  const cnt = shopWishlist.length;
+  document.getElementById('wishlist-count').textContent = cnt;
+  const stat = document.getElementById('shop-wishlist-stat');
+  if (stat) stat.textContent = cnt;
+}
+
+function toggleWishlist() {
+  const drawer = document.getElementById('wishlist-drawer');
+  const isOpen = !drawer.classList.contains('translate-x-full');
+  drawer.classList.toggle('translate-x-full', isOpen);
+  if (!isOpen) return;
+  renderWishlistDrawer();
+}
+
+function renderWishlistDrawer() {
+  const el = document.getElementById('wishlist-items');
+  if (!shopWishlist.length) {
+    el.innerHTML = '<div class="text-center py-8 text-slate-400"><i class="fas fa-heart text-3xl mb-3 block opacity-30"></i><div class="text-sm">Your wishlist is empty</div></div>';
+    return;
+  }
+  el.innerHTML = shopWishlist.map(p => \`
+    <div class="card p-3 flex gap-3 items-center">
+      <img src="\${p.image}" class="w-14 h-14 rounded-lg object-cover flex-shrink-0" onerror="this.src='https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&q=80'">
+      <div class="flex-1 min-w-0">
+        <div class="text-xs font-semibold text-white leading-tight" style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">\${p.title}</div>
+        <div class="text-sm font-black text-green-400 mt-1">\${formatCurrency(p.sellingPrice)}</div>
+      </div>
+      <button onclick="toggleWishlistItem(\${JSON.stringify(p).replace(/'/g,'&#39;').replace(/"/g,'&quot;')})" class="text-red-400 hover:text-red-300">
+        <i class="fas fa-trash text-xs"></i>
+      </button>
+    </div>
+  \`).join('');
+}
+
+function clearWishlist() {
+  shopWishlist = [];
+  localStorage.setItem('shop_wishlist', JSON.stringify(shopWishlist));
+  updateWishlistCount();
+  renderWishlistDrawer();
+  renderShopGrid();
+  showToast('Wishlist cleared', 'info');
+}
+
+function loadMoreShop() {
+  showToast('All products loaded!', 'info');
+}
+
+function quickShopCategory(cat) {
+  document.getElementById('shop-category').value = cat;
+  loadShopProducts();
+}
+
+function shareProduct(title, price) {
+  const text = \`Check out \${title} at \${formatCurrency(parseInt(price))} on PulseMarket! 🛒\`;
+  if (navigator.share) {
+    navigator.share({ title, text, url: window.location.href });
+  } else {
+    navigator.clipboard.writeText(text).then(() => showToast('Copied to clipboard!', 'success'));
+  }
+}
+
+loadShopProducts();
+updateWishlistCount();
+</script>
+`, 'shopping')
+}
+
+// ── PAGE: AI AGENTS ───────────────────────────────────────────────────────────
+function getAIAgentsPage() {
+  const agents = [
+    { id: 'trend', icon: 'fa-chart-line', color: 'indigo', label: 'Trend Agent', desc: 'Tracks viral trends across social media and search engines' },
+    { id: 'supplier', icon: 'fa-truck', color: 'cyan', label: 'Supplier Agent', desc: 'Finds and scores suppliers from Alibaba, AliExpress & IndiaMart' },
+    { id: 'seo', icon: 'fa-search', color: 'green', label: 'SEO Agent', desc: 'Generates optimized product titles, keywords and listing copy' },
+    { id: 'research', icon: 'fa-flask', color: 'purple', label: 'Research Agent', desc: 'Deep market research on any niche, buyer behavior and demand' },
+    { id: 'pricing', icon: 'fa-tag', color: 'yellow', label: 'Pricing Agent', desc: 'Recommends optimal prices based on competition and demand' },
+    { id: 'competitor', icon: 'fa-binoculars', color: 'orange', label: 'Competitor Agent', desc: 'Monitors competitor ads, pricing, reviews and strategies' },
+  ]
+
+  return getLayout('AI Agents', `
+<div class="main-content">
+  <div class="topbar flex justify-between items-center">
+    <div>
+      <h1 class="text-lg font-bold text-white flex items-center gap-2">
+        <i class="fas fa-robot text-purple-400"></i> AI Intelligence Layer
+      </h1>
+      <div class="text-xs text-slate-400 mt-0.5">6 specialized AI agents — ask anything about your business</div>
+    </div>
+    <div class="flex items-center gap-3">
+      <div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-purple-900/30 border border-purple-700/40 text-purple-300 text-xs font-medium">
+        <span class="live-dot" style="background:#8b5cf6"></span> AI Online
+      </div>
+      <div id="auth-status"></div>
+    </div>
+  </div>
+
+  <div class="p-6">
+    <!-- Agent Cards -->
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+      ${agents.map(a => `
+      <button onclick="selectAgent('${a.id}')" id="agent-btn-${a.id}"
+        class="card p-4 text-center hover:border-${a.color}-500 transition-all hover:-translate-y-1 group cursor-pointer border-transparent">
+        <div class="w-12 h-12 rounded-2xl bg-${a.color}-900/30 flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
+          <i class="fas ${a.icon} text-${a.color}-400 text-xl"></i>
+        </div>
+        <div class="text-xs font-bold text-white">${a.label}</div>
+        <div class="text-xs text-slate-500 mt-1 leading-tight hidden md:block">${a.desc.split(' ').slice(0, 5).join(' ')}...</div>
+      </button>`).join('')}
+    </div>
+
+    <!-- Chat Interface -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- Chat Panel -->
+      <div class="lg:col-span-2">
+        <div class="card flex flex-col" style="height:580px">
+          <!-- Chat Header -->
+          <div class="p-4 border-b border-slate-700 flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-indigo-900/50 flex items-center justify-center" id="active-agent-icon">
+              <i class="fas fa-robot text-indigo-400"></i>
+            </div>
+            <div>
+              <div class="font-bold text-white text-sm" id="active-agent-name">Select an AI Agent above</div>
+              <div class="text-xs text-slate-400" id="active-agent-desc">Choose a specialized agent to start analyzing</div>
+            </div>
+            <div class="ml-auto flex items-center gap-1">
+              <span class="live-dot" style="width:6px;height:6px;background:#10b981"></span>
+              <span class="text-xs text-green-400">Online</span>
+            </div>
+          </div>
+
+          <!-- Messages -->
+          <div class="flex-1 overflow-y-auto p-4 space-y-4" id="chat-messages">
+            <div class="flex gap-3">
+              <div class="w-8 h-8 rounded-full bg-indigo-900/60 flex items-center justify-center flex-shrink-0">
+                <i class="fas fa-robot text-indigo-400 text-xs"></i>
+              </div>
+              <div class="flex-1">
+                <div class="bg-slate-800/60 rounded-2xl rounded-tl-sm p-4 text-sm text-slate-200">
+                  👋 Welcome to PulseMarket AI Intelligence! I have 6 specialized agents ready to help you:
+                  <div class="mt-3 grid grid-cols-2 gap-2">
+                    ${agents.map(a => `
+                    <button onclick="selectAgent('${a.id}')" class="text-left p-2 rounded-lg bg-slate-700/50 hover:bg-${a.color}-900/40 hover:border-${a.color}-500 border border-transparent transition-all text-xs">
+                      <i class="fas ${a.icon} text-${a.color}-400 mr-1"></i>
+                      <span class="text-white font-medium">${a.label}</span>
+                    </button>`).join('')}
+                  </div>
+                </div>
+                <div class="text-xs text-slate-500 mt-1 ml-1">Now • PulseMarket AI</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Input Bar -->
+          <div class="p-4 border-t border-slate-700">
+            <div class="flex gap-3">
+              <input id="chat-input" type="text" placeholder="Ask your AI agent anything..." class="input flex-1 text-sm"
+                onkeydown="if(event.key==='Enter' && !event.shiftKey) { event.preventDefault(); sendMessage(); }" />
+              <button onclick="sendMessage()" class="btn-primary px-4" id="send-btn">
+                <i class="fas fa-paper-plane"></i>
+              </button>
+            </div>
+            <div class="flex gap-2 mt-2 flex-wrap" id="quick-prompts">
+              <span class="text-xs text-slate-500">Try:</span>
+              <button onclick="setPrompt('wireless earbuds')" class="text-xs text-indigo-400 hover:text-indigo-300 bg-indigo-900/20 px-2 py-1 rounded-full">wireless earbuds</button>
+              <button onclick="setPrompt('vitamin c serum')" class="text-xs text-indigo-400 hover:text-indigo-300 bg-indigo-900/20 px-2 py-1 rounded-full">vitamin c serum</button>
+              <button onclick="setPrompt('yoga mat india')" class="text-xs text-indigo-400 hover:text-indigo-300 bg-indigo-900/20 px-2 py-1 rounded-full">yoga mat india</button>
+              <button onclick="setPrompt('resistance bands')" class="text-xs text-indigo-400 hover:text-indigo-300 bg-indigo-900/20 px-2 py-1 rounded-full">resistance bands</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Side Panel: Agent Info + Stats -->
+      <div class="space-y-4">
+        <!-- Active Agent Card -->
+        <div class="card p-5" id="agent-info-panel">
+          <h4 class="font-bold text-white mb-3 text-sm">🤖 AI Agent Status</h4>
+          <div class="space-y-3">
+            ${agents.map(a => `
+            <div class="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-800/50 transition-all cursor-pointer" onclick="selectAgent('${a.id}')">
+              <div class="w-8 h-8 rounded-xl bg-${a.color}-900/30 flex items-center justify-center flex-shrink-0">
+                <i class="fas ${a.icon} text-${a.color}-400 text-xs"></i>
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="text-xs font-bold text-white">${a.label}</div>
+                <div class="text-xs text-slate-500 truncate">${a.desc}</div>
+              </div>
+              <div class="w-2 h-2 rounded-full bg-green-500 flex-shrink-0"></div>
+            </div>`).join('')}
+          </div>
+        </div>
+
+        <!-- Recent Insights -->
+        <div class="card p-5">
+          <h4 class="font-bold text-white mb-3 text-sm flex items-center gap-2"><i class="fas fa-lightbulb text-yellow-400"></i> Today's AI Insights</h4>
+          <div class="space-y-3">
+            ${[
+              { agent: 'Trend Agent', insight: 'Resistance bands trending +187% in Delhi-NCR this week', color: 'indigo' },
+              { agent: 'Pricing Agent', insight: 'Vitamin C Serum sweet spot: ₹549-₹599 for max conversion', color: 'yellow' },
+              { agent: 'Supplier Agent', insight: '3 new Gold Suppliers for wireless earbuds added on Alibaba', color: 'cyan' },
+              { agent: 'SEO Agent', insight: '"yoga mat non slip" getting 45K searches/month in India', color: 'green' },
+            ].map(i => `
+            <div class="p-3 rounded-xl bg-slate-800/50 border border-slate-700">
+              <div class="text-xs font-bold text-${i.color}-400 mb-1">${i.agent}</div>
+              <div class="text-xs text-slate-300 leading-relaxed">${i.insight}</div>
+            </div>`).join('')}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let currentAgent = 'trend';
+const agentMeta = {
+  trend: { icon: 'fa-chart-line', color: 'indigo', name: 'Trend Agent', desc: 'Tracking viral trends across social & search' },
+  supplier: { icon: 'fa-truck', color: 'cyan', name: 'Supplier Agent', desc: 'Finding verified global suppliers' },
+  seo: { icon: 'fa-search', color: 'green', name: 'SEO Agent', desc: 'Optimizing listings for maximum visibility' },
+  research: { icon: 'fa-flask', color: 'purple', name: 'Research Agent', desc: 'Deep market research & consumer insights' },
+  pricing: { icon: 'fa-tag', color: 'yellow', name: 'Pricing Agent', desc: 'Data-driven pricing recommendations' },
+  competitor: { icon: 'fa-binoculars', color: 'orange', name: 'Competitor Agent', desc: 'Monitoring competitor strategies' },
+};
+
+function selectAgent(id) {
+  currentAgent = id;
+  const meta = agentMeta[id];
+
+  // Update header
+  document.getElementById('active-agent-icon').innerHTML = \`<i class="fas \${meta.icon} text-\${meta.color}-400"></i>\`;
+  document.getElementById('active-agent-name').textContent = meta.name;
+  document.getElementById('active-agent-desc').textContent = meta.desc;
+
+  // Highlight selected button
+  document.querySelectorAll('[id^="agent-btn-"]').forEach(b => {
+    b.style.borderColor = '';
+    b.style.background = '';
+  });
+  const btn = document.getElementById('agent-btn-' + id);
+  if (btn) {
+    btn.style.borderColor = 'rgba(99,102,241,0.6)';
+    btn.style.background = 'rgba(99,102,241,0.1)';
+  }
+
+  addMessage('ai', \`✅ \${meta.name} activated! I'm ready to help. What would you like to analyze?\`);
+  document.getElementById('chat-input').placeholder = \`Ask \${meta.name} anything...\`;
+  document.getElementById('chat-input').focus();
+}
+
+function addMessage(role, text) {
+  const container = document.getElementById('chat-messages');
+  const isAI = role === 'ai';
+  const meta = agentMeta[currentAgent];
+  const div = document.createElement('div');
+  div.className = 'flex gap-3' + (isAI ? '' : ' flex-row-reverse');
+
+  const formattedText = text.replace(/\\*\\*(.*?)\\*\\*/g, '<strong class="text-white">$1</strong>');
+
+  if (isAI) {
+    div.innerHTML = \`
+      <div class="w-8 h-8 rounded-full bg-\${meta.color}-900/60 flex items-center justify-center flex-shrink-0">
+        <i class="fas \${meta.icon} text-\${meta.color}-400 text-xs"></i>
+      </div>
+      <div class="flex-1 max-w-lg">
+        <div class="bg-slate-800/60 rounded-2xl rounded-tl-sm p-4 text-sm text-slate-200 leading-relaxed">\${formattedText}</div>
+        <div class="text-xs text-slate-500 mt-1 ml-1">Just now • \${meta.name}</div>
+      </div>\`;
+  } else {
+    div.innerHTML = \`
+      <div class="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center flex-shrink-0 text-white text-xs font-bold">
+        \${(PM.user?.name?.charAt(0) || 'U')}
+      </div>
+      <div class="flex-1 max-w-lg flex flex-col items-end">
+        <div class="bg-indigo-600 rounded-2xl rounded-tr-sm p-4 text-sm text-white">\${formattedText}</div>
+        <div class="text-xs text-slate-500 mt-1 mr-1">Just now</div>
+      </div>\`;
+  }
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+}
+
+function addTypingIndicator() {
+  const container = document.getElementById('chat-messages');
+  const meta = agentMeta[currentAgent];
+  const div = document.createElement('div');
+  div.id = 'typing-indicator';
+  div.className = 'flex gap-3';
+  div.innerHTML = \`
+    <div class="w-8 h-8 rounded-full bg-\${meta.color}-900/60 flex items-center justify-center flex-shrink-0">
+      <i class="fas \${meta.icon} text-\${meta.color}-400 text-xs"></i>
+    </div>
+    <div class="bg-slate-800/60 rounded-2xl rounded-tl-sm px-4 py-3 flex items-center gap-1">
+      <div class="w-2 h-2 rounded-full bg-slate-400 animate-bounce" style="animation-delay:0ms"></div>
+      <div class="w-2 h-2 rounded-full bg-slate-400 animate-bounce" style="animation-delay:150ms"></div>
+      <div class="w-2 h-2 rounded-full bg-slate-400 animate-bounce" style="animation-delay:300ms"></div>
+    </div>\`;
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+}
+
+async function sendMessage() {
+  const input = document.getElementById('chat-input');
+  const message = input.value.trim();
+  if (!message) return;
+
+  addMessage('user', message);
+  input.value = '';
+
+  addTypingIndicator();
+  document.getElementById('send-btn').disabled = true;
+
+  try {
+    const { data } = await axios.post('/api/ai/chat', { agent: currentAgent, message });
+    document.getElementById('typing-indicator')?.remove();
+    if (data.success) {
+      addMessage('ai', data.data.response);
+    }
+  } catch(e) {
+    document.getElementById('typing-indicator')?.remove();
+    addMessage('ai', '⚠️ Connection issue. Please try again in a moment.');
+  }
+  document.getElementById('send-btn').disabled = false;
+  input.focus();
+}
+
+function setPrompt(text) {
+  document.getElementById('chat-input').value = text;
+  document.getElementById('chat-input').focus();
+}
+
+selectAgent('trend');
+</script>
+`, 'ai-agents')
+}
+
+// ── PAGE: ANALYTICS ENGINE ────────────────────────────────────────────────────
+function getAnalyticsPage() {
+  return getLayout('Analytics Engine', `
+<div class="main-content">
+  <div class="topbar flex justify-between items-center">
+    <div>
+      <h1 class="text-lg font-bold text-white flex items-center gap-2">
+        <i class="fas fa-chart-bar text-indigo-400"></i> Analytics Engine
+      </h1>
+      <div class="text-xs text-slate-400 mt-0.5">Forecasting · Country heatmaps · Growth prediction · Historical trends</div>
+    </div>
+    <div class="flex items-center gap-3">
+      <select id="analytics-category" class="select text-sm" onchange="loadAnalytics()">
+        <option value="all">All Categories</option>
+        ${CATEGORIES.map(c => `<option value="${c}">${c}</option>`).join('')}
+      </select>
+      <button onclick="exportData()" class="btn-outline text-sm"><i class="fas fa-download mr-1"></i>Export</button>
+      <div id="auth-status"></div>
+    </div>
+  </div>
+
+  <div class="p-6">
+    <!-- KPI Row -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6" id="analytics-kpis">
+      ${[1,2,3,4].map(() => '<div class="stat-card shimmer h-24 rounded-xl"></div>').join('')}
+    </div>
+
+    <!-- Charts Row 1 -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+      <!-- Revenue Forecast -->
+      <div class="card p-5 lg:col-span-2">
+        <div class="flex justify-between items-center mb-4">
+          <div>
+            <h3 class="font-bold text-white flex items-center gap-2"><i class="fas fa-chart-area text-indigo-400"></i> Revenue Forecast (12-Month)</h3>
+            <div class="text-xs text-slate-400 mt-0.5">Shaded area = AI forecast</div>
+          </div>
+          <div class="flex gap-2">
+            <span class="flex items-center gap-1 text-xs text-slate-400"><span class="w-3 h-3 rounded-sm bg-indigo-500/70 inline-block"></span> Actual</span>
+            <span class="flex items-center gap-1 text-xs text-slate-400"><span class="w-3 h-3 rounded-sm bg-purple-500/40 inline-block"></span> Forecast</span>
+          </div>
+        </div>
+        <div class="chart-container" style="height:280px">
+          <canvas id="revenueChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Category Growth -->
+      <div class="card p-5">
+        <h3 class="font-bold text-white mb-4 flex items-center gap-2"><i class="fas fa-chart-pie text-cyan-400"></i> Category Growth</h3>
+        <div class="chart-container" style="height:200px">
+          <canvas id="categoryGrowthChart"></canvas>
+        </div>
+        <div id="category-growth-list" class="mt-3 space-y-2"></div>
+      </div>
+    </div>
+
+    <!-- India Heatmap + Top Products -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+      <!-- India State Heatmap -->
+      <div class="card p-5">
+        <h3 class="font-bold text-white mb-4 flex items-center gap-2"><i class="fas fa-map-marked-alt text-green-400"></i> Demand Heatmap — India States</h3>
+        <div id="india-heatmap" class="space-y-2.5"></div>
+      </div>
+
+      <!-- Top Products Table -->
+      <div class="card p-5">
+        <h3 class="font-bold text-white mb-4 flex items-center gap-2"><i class="fas fa-trophy text-yellow-400"></i> Top Products by Revenue</h3>
+        <div id="top-products-analytics" class="space-y-3"></div>
+      </div>
+    </div>
+
+    <!-- Growth Prediction -->
+    <div class="card p-5 mb-6">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="font-bold text-white flex items-center gap-2"><i class="fas fa-magic text-purple-400"></i> 90-Day Growth Prediction</h3>
+        <span class="badge badge-purple text-xs">AI Powered</span>
+      </div>
+      <div class="chart-container" style="height:200px">
+        <canvas id="growthChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Insight Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      ${[
+        { icon: 'fa-arrow-trend-up', color: 'green', title: 'Best Growth Category', desc: 'Beauty products showing strongest 30-day growth momentum at +35%', value: '+35%' },
+        { icon: 'fa-map-pin', color: 'indigo', title: 'Hottest Market', desc: 'Maharashtra drives 23% of all orders — target Mumbai & Pune first', value: 'Maharashtra' },
+        { icon: 'fa-calendar-alt', color: 'orange', title: 'Peak Season Ahead', desc: 'Festive season (Oct-Dec) typically drives 3x normal revenue', value: 'Oct-Dec' },
+      ].map(i => `
+      <div class="card p-5" style="background: linear-gradient(135deg, rgba(99,102,241,0.05), rgba(139,92,246,0.05))">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-10 h-10 rounded-xl bg-${i.color}-900/30 flex items-center justify-center">
+            <i class="fas ${i.icon} text-${i.color}-400"></i>
+          </div>
+          <div class="text-2xl font-black text-${i.color}-400">${i.value}</div>
+        </div>
+        <div class="font-bold text-white text-sm mb-1">${i.title}</div>
+        <div class="text-xs text-slate-400 leading-relaxed">${i.desc}</div>
+      </div>`).join('')}
+    </div>
+  </div>
+</div>
+
+<script>
+let revenueChartInst, growthChartInst, catGrowthChartInst;
+
+async function loadAnalytics() {
+  const category = document.getElementById('analytics-category').value;
+  try {
+    const { data } = await axios.get(\`/api/analytics?category=\${encodeURIComponent(category)}\`);
+    if (data.success) renderAnalytics(data.data);
+  } catch(e) { console.error(e); }
+}
+
+function renderAnalytics(d) {
+  // KPIs
+  document.getElementById('analytics-kpis').innerHTML = \`
+    <div class="stat-card">
+      <div class="flex justify-between items-center mb-2">
+        <div class="text-xs text-slate-400">Total Revenue (9mo)</div>
+        <i class="fas fa-rupee-sign text-green-400 text-sm"></i>
+      </div>
+      <div class="text-2xl font-black text-white">₹\${(d.totalRevenue/100000).toFixed(1)}L</div>
+      <div class="text-xs text-green-400 mt-1">+\${d.avgGrowth}% avg growth</div>
+    </div>
+    <div class="stat-card">
+      <div class="flex justify-between items-center mb-2">
+        <div class="text-xs text-slate-400">Best State</div>
+        <i class="fas fa-map-pin text-indigo-400 text-sm"></i>
+      </div>
+      <div class="text-xl font-black text-white">\${d.bestState}</div>
+      <div class="text-xs text-indigo-400 mt-1">Highest demand region</div>
+    </div>
+    <div class="stat-card">
+      <div class="flex justify-between items-center mb-2">
+        <div class="text-xs text-slate-400">Best Category</div>
+        <i class="fas fa-fire text-orange-400 text-sm"></i>
+      </div>
+      <div class="text-xl font-black text-white">\${d.bestCategory}</div>
+      <div class="text-xs text-orange-400 mt-1">Fastest growing</div>
+    </div>
+    <div class="stat-card">
+      <div class="flex justify-between items-center mb-2">
+        <div class="text-xs text-slate-400">Avg Category Growth</div>
+        <i class="fas fa-chart-line text-purple-400 text-sm"></i>
+      </div>
+      <div class="text-2xl font-black text-white">+\${d.avgGrowth}%</div>
+      <div class="text-xs text-purple-400 mt-1">Month over month</div>
+    </div>
+  \`;
+
+  // Revenue forecast chart
+  if (revenueChartInst) revenueChartInst.destroy();
+  const rCtx = document.getElementById('revenueChart').getContext('2d');
+  revenueChartInst = new Chart(rCtx, {
+    type: 'bar',
+    data: {
+      labels: d.revenueData.map(x => x.month),
+      datasets: [{
+        label: 'Revenue',
+        data: d.revenueData.map(x => x.value),
+        backgroundColor: d.revenueData.map(x => x.forecast ? 'rgba(139,92,246,0.4)' : 'rgba(99,102,241,0.7)'),
+        borderColor: d.revenueData.map(x => x.forecast ? 'rgba(139,92,246,0.9)' : 'rgba(99,102,241,0.9)'),
+        borderWidth: 1,
+        borderRadius: 6,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => '₹' + ctx.raw.toLocaleString('en-IN') } } },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 10 } } },
+        y: { grid: { color: 'rgba(51,65,85,0.5)' }, ticks: { color: '#94a3b8', font: { size: 10 }, callback: v => '₹' + (v/1000) + 'K' } }
+      }
+    }
+  });
+
+  // Category growth chart
+  if (catGrowthChartInst) catGrowthChartInst.destroy();
+  const cCtx = document.getElementById('categoryGrowthChart').getContext('2d');
+  const top5 = d.categoryGrowth.sort((a,b) => b.growth - a.growth).slice(0, 5);
+  catGrowthChartInst = new Chart(cCtx, {
+    type: 'doughnut',
+    data: {
+      labels: top5.map(c => c.category),
+      datasets: [{ data: top5.map(c => c.growth), backgroundColor: ['#6366f1','#8b5cf6','#06b6d4','#10b981','#f59e0b'], borderWidth: 2, borderColor: '#1e293b' }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+  });
+
+  document.getElementById('category-growth-list').innerHTML = top5.slice(0, 4).map(c => \`
+    <div class="flex items-center justify-between">
+      <span class="text-xs text-slate-300">\${c.category}</span>
+      <span class="text-xs font-bold text-green-400">+\${c.growth}%</span>
+    </div>
+  \`).join('');
+
+  // India heatmap
+  const maxVal = Math.max(...d.stateData.map(s => s.value));
+  document.getElementById('india-heatmap').innerHTML = d.stateData.sort((a,b) => b.value - a.value).map(s => {
+    const pct = Math.round(s.value / maxVal * 100);
+    const color = s.value > 75 ? 'indigo' : s.value > 60 ? 'cyan' : s.value > 45 ? 'green' : 'slate';
+    return \`<div class="flex items-center gap-3">
+      <div class="w-28 text-xs text-slate-300 font-medium">\${s.state}</div>
+      <div class="flex-1 progress-bar h-5 relative rounded-lg overflow-hidden">
+        <div class="progress-fill bg-gradient-to-r from-\${color}-600 to-\${color}-400 h-full" style="width:\${pct}%;border-radius:6px"></div>
+      </div>
+      <div class="text-xs font-bold text-\${color}-400 w-8 text-right">\${s.value}</div>
+    </div>\`;
+  }).join('');
+
+  // Top products
+  document.getElementById('top-products-analytics').innerHTML = d.topProducts.slice(0, 6).map((p, i) => \`
+    <div class="flex items-center gap-3">
+      <div class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-black \${i === 0 ? 'bg-yellow-500 text-black' : i === 1 ? 'bg-slate-400 text-black' : i === 2 ? 'bg-orange-600 text-white' : 'bg-slate-700 text-slate-300'}">#\${i+1}</div>
+      <div class="flex-1 min-w-0">
+        <div class="text-xs font-medium text-white truncate">\${p.title}</div>
+        <div class="text-xs text-slate-500">\${p.units.toLocaleString()} units sold</div>
+      </div>
+      <div class="text-right flex-shrink-0">
+        <div class="text-xs font-black text-green-400">₹\${(p.revenue/1000).toFixed(0)}K</div>
+        <div class="text-xs text-cyan-400">\${p.growth}</div>
+      </div>
+    </div>
+  \`).join('');
+
+  // 90-day growth prediction
+  if (growthChartInst) growthChartInst.destroy();
+  const gCtx = document.getElementById('growthChart').getContext('2d');
+  const days = Array.from({length: 90}, (_, i) => i + 1);
+  const actual = days.slice(0, 60).map(d => Math.round(40000 + d * 600 + Math.random() * 8000));
+  const forecast = [actual[59], ...days.slice(60).map(d => Math.round(40000 + d * 700 + Math.random() * 5000))];
+  growthChartInst = new Chart(gCtx, {
+    type: 'line',
+    data: {
+      labels: days.map(d => d % 10 === 0 ? \`Day \${d}\` : ''),
+      datasets: [
+        { label: 'Actual', data: [...actual, ...Array(30).fill(null)], borderColor: '#6366f1', backgroundColor: 'rgba(99,102,241,0.1)', fill: true, tension: 0.4, pointRadius: 0 },
+        { label: 'Forecast', data: [...Array(59).fill(null), ...forecast], borderColor: '#8b5cf6', backgroundColor: 'rgba(139,92,246,0.08)', borderDash: [5,5], fill: true, tension: 0.4, pointRadius: 0 },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: '#94a3b8', font: { size: 11 } } }, tooltip: { callbacks: { label: ctx => '₹' + (ctx.raw||0).toLocaleString('en-IN') } } },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 9 } } },
+        y: { grid: { color: 'rgba(51,65,85,0.4)' }, ticks: { color: '#94a3b8', font: { size: 10 }, callback: v => '₹' + (v/1000).toFixed(0) + 'K' } }
+      }
+    }
+  });
+}
+
+function exportData() {
+  showToast('Exporting analytics report...', 'info');
+  setTimeout(() => showToast('Export ready! (CSV download in Pro plan)', 'success'), 1500);
+}
+
+loadAnalytics();
+</script>
+`, 'analytics')
+}
+
+// ── PAGE: MARKETPLACE ─────────────────────────────────────────────────────────
+function getMarketplacePage() {
+  return getLayout('Marketplace', `
+<div class="main-content">
+  <div class="topbar flex justify-between items-center">
+    <div>
+      <h1 class="text-lg font-bold text-white flex items-center gap-2">
+        <i class="fas fa-store text-green-400"></i> Affiliate Marketplace
+      </h1>
+      <div class="text-xs text-slate-400 mt-0.5">Earn commissions · Compare prices · Track affiliate performance</div>
+    </div>
+    <div class="flex items-center gap-3">
+      <div class="text-xs text-green-400 bg-green-900/20 border border-green-800/40 px-3 py-1.5 rounded-full font-medium">
+        <i class="fas fa-rupee-sign mr-1"></i> Earn up to 8% per sale
+      </div>
+      <div id="auth-status"></div>
+    </div>
+  </div>
+
+  <div class="p-6">
+    <!-- Affiliate Stats -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      ${[
+        { label: 'Est. Monthly Commission', value: '₹12,400', icon: 'fa-rupee-sign', color: 'green' },
+        { label: 'Products Available', value: '63+', icon: 'fa-box', color: 'indigo' },
+        { label: 'Platforms', value: '3', icon: 'fa-store', color: 'cyan' },
+        { label: 'Max Commission', value: '8%', icon: 'fa-percent', color: 'purple' },
+      ].map(s => `
+      <div class="stat-card">
+        <div class="flex justify-between items-center mb-2">
+          <div class="text-xs text-slate-400">${s.label}</div>
+          <div class="w-8 h-8 bg-${s.color}-900/30 rounded-lg flex items-center justify-center">
+            <i class="fas ${s.icon} text-${s.color}-400 text-sm"></i>
+          </div>
+        </div>
+        <div class="text-2xl font-black text-white">${s.value}</div>
+      </div>`).join('')}
+    </div>
+
+    <!-- Filter Row -->
+    <div class="card p-4 mb-6 flex flex-wrap gap-4 items-center">
+      <div class="flex-1 relative min-w-48">
+        <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+        <input id="market-search" type="text" placeholder="Search products..." class="input pl-9 text-sm" oninput="filterMarket()">
+      </div>
+      <select id="market-category" class="select text-sm" onchange="loadMarket()">
+        <option value="all">All Categories</option>
+        ${CATEGORIES.map(c => `<option value="${c}">${c}</option>`).join('')}
+      </select>
+      <select id="market-platform" class="select text-sm" onchange="filterMarket()">
+        <option value="all">All Platforms</option>
+        <option value="amazon">Amazon India</option>
+        <option value="flipkart">Flipkart</option>
+        <option value="meesho">Meesho</option>
+      </select>
+      <div class="flex gap-2">
+        <span class="text-xs text-slate-400 self-center">Sort:</span>
+        <button onclick="sortMarket('commission')" class="tab-btn text-xs active" id="sort-commission">Commission</button>
+        <button onclick="sortMarket('demand')" class="tab-btn text-xs" id="sort-demand">Demand</button>
+        <button onclick="sortMarket('price')" class="tab-btn text-xs" id="sort-price">Price</button>
+      </div>
+    </div>
+
+    <!-- Products Grid -->
+    <div id="market-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 mb-6">
+      ${Array(8).fill('<div class="card h-80 shimmer rounded-xl"></div>').join('')}
+    </div>
+  </div>
+</div>
+
+<script>
+let marketProducts = [];
+let marketFiltered = [];
+
+async function loadMarket() {
+  const category = document.getElementById('market-category').value;
+  document.getElementById('market-grid').innerHTML = Array(8).fill('<div class="card h-80 shimmer rounded-xl"></div>').join('');
+  try {
+    const { data } = await axios.get(\`/api/marketplace?category=\${encodeURIComponent(category)}\`);
+    if (data.success) {
+      marketProducts = data.data;
+      marketFiltered = [...marketProducts];
+      sortMarket('commission');
+    }
+  } catch(e) { console.error(e); }
+}
+
+function filterMarket() {
+  const q = document.getElementById('market-search').value.toLowerCase();
+  const platform = document.getElementById('market-platform').value;
+  marketFiltered = marketProducts.filter(p => {
+    const titleMatch = p.title.toLowerCase().includes(q);
+    const platformMatch = platform === 'all' || p.platforms.some(pl => pl.name.toLowerCase().includes(platform));
+    return titleMatch && platformMatch;
+  });
+  renderMarketGrid();
+}
+
+function sortMarket(by) {
+  document.querySelectorAll('[id^="sort-"]').forEach(b => b.classList.remove('active'));
+  document.getElementById('sort-' + by)?.classList.add('active');
+  if (by === 'commission') marketFiltered.sort((a,b) => b.commissionEarned - a.commissionEarned);
+  else if (by === 'demand') marketFiltered.sort((a,b) => b.demand - a.demand);
+  else if (by === 'price') marketFiltered.sort((a,b) => a.bestPrice - b.bestPrice);
+  renderMarketGrid();
+}
+
+function renderMarketGrid() {
+  const grid = document.getElementById('market-grid');
+  if (!marketFiltered.length) {
+    grid.innerHTML = '<div class="col-span-4 text-center py-12 text-slate-400"><i class="fas fa-store text-4xl mb-3 block opacity-30"></i><div class="font-bold">No products found</div></div>';
+    return;
+  }
+  grid.innerHTML = marketFiltered.map(p => renderMarketCard(p)).join('');
+}
+
+function renderMarketCard(p) {
+  const scoreClass = getScoreClass(p.viralScore);
+  return \`<div class="card overflow-hidden hover:border-green-500 transition-all hover:-translate-y-1">
+    <div class="relative" style="height:160px;overflow:hidden">
+      <img src="\${p.image}" alt="\${p.title}" class="w-full h-full object-cover" onerror="this.src='https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&q=80'">
+      <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
+      <div class="absolute top-2 right-2">
+        <div class="score-ring \${scoreClass}" style="width:36px;height:36px;font-size:11px">\${p.viralScore}</div>
+      </div>
+      <div class="absolute bottom-2 left-2">
+        <span class="text-xs bg-green-600 text-white font-bold px-2 py-0.5 rounded-full">+₹\${p.commissionEarned}/sale</span>
+      </div>
+    </div>
+
+    <div class="p-4">
+      <h3 class="text-xs font-bold text-white mb-2 leading-tight" style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">\${p.title}</h3>
+
+      <!-- Platform Price Comparison -->
+      <div class="space-y-1.5 mb-3">
+        \${p.platforms.map(pf => \`
+          <div class="flex items-center justify-between bg-slate-800/60 rounded-lg px-2 py-1.5">
+            <span class="text-xs font-bold text-slate-300">\${pf.name.replace(' India','')}</span>
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-black text-white">\${formatCurrency(pf.price)}</span>
+              <span class="text-xs text-green-400">\${pf.commission}%</span>
+            </div>
+          </div>
+        \`).join('')}
+      </div>
+
+      <!-- Affiliate Info -->
+      <div class="flex items-center justify-between mb-3 px-2 py-1.5 bg-green-900/20 border border-green-800/30 rounded-lg">
+        <div class="text-xs text-green-400 font-bold">Est. Monthly Commission</div>
+        <div class="text-sm font-black text-green-400">₹\${p.estimatedCommission.toLocaleString()}</div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex gap-2">
+        <a href="\${p.platforms[0].url}" target="_blank" class="flex-1 btn-primary text-xs py-2 justify-center">
+          <i class="fas fa-shopping-cart"></i> Best Deal
+        </a>
+        <button onclick="copyAffiliateLink('\${p.affiliateTag}')" class="btn-outline px-3 py-2 text-xs" title="Copy affiliate link">
+          <i class="fas fa-link"></i>
+        </button>
+        <button onclick="addToWatchlist({id:'\${p.id}',title:'\${p.title}',image:'\${p.image}',platform:'\${p.platform}'})" class="btn-outline px-3 py-2 text-xs">
+          <i class="fas fa-heart"></i>
+        </button>
+      </div>
+    </div>
+  </div>\`;
+}
+
+function copyAffiliateLink(tag) {
+  const link = \`https://pulsemarket.in/ref/\${tag}\`;
+  navigator.clipboard.writeText(link).then(() => showToast('Affiliate link copied! 🔗', 'success'));
+}
+
+loadMarket();
+</script>
+`, 'marketplace')
+}
+
+// ── PAGE: NOTIFICATIONS ───────────────────────────────────────────────────────
+function getNotificationsPage() {
+  return getLayout('Smart Alerts', `
+<div class="main-content">
+  <div class="topbar flex justify-between items-center">
+    <div>
+      <h1 class="text-lg font-bold text-white flex items-center gap-2">
+        <i class="fas fa-bell text-yellow-400"></i> AI Smart Alerts
+      </h1>
+      <div class="text-xs text-slate-400 mt-0.5">Real-time AI notifications — trends, opportunities, price drops & competitor moves</div>
+    </div>
+    <div class="flex items-center gap-3">
+      <button onclick="markAllRead()" class="btn-outline text-sm"><i class="fas fa-check-double mr-1"></i>Mark All Read</button>
+      <button onclick="loadNotifications()" class="btn-outline text-sm"><i class="fas fa-sync mr-1"></i>Refresh</button>
+      <div id="auth-status"></div>
+    </div>
+  </div>
+
+  <div class="p-6">
+    <!-- Alert Settings Banner -->
+    <div class="card p-5 mb-6" style="background: linear-gradient(135deg, rgba(99,102,241,0.1), rgba(139,92,246,0.1)); border-color: rgba(99,102,241,0.3)">
+      <div class="flex flex-col md:flex-row items-start md:items-center gap-4">
+        <div class="flex-1">
+          <h3 class="font-bold text-white flex items-center gap-2 mb-1">
+            <i class="fas fa-robot text-indigo-400"></i> AI Alert System Active
+          </h3>
+          <p class="text-slate-300 text-sm">Your AI monitors 9 data sources 24/7. Get notified when products go viral, prices drop, or competitors make moves.</p>
+        </div>
+        <div class="flex gap-3 flex-wrap">
+          ${[
+            { icon: 'fa-paper-plane', label: 'Telegram', color: 'cyan' },
+            { icon: 'fa-whatsapp', label: 'WhatsApp', color: 'green' },
+            { icon: 'fa-envelope', label: 'Email', color: 'indigo' },
+          ].map(c => `
+          <div class="flex items-center gap-2 px-3 py-2 rounded-xl border border-slate-600 bg-slate-800/60 cursor-pointer hover:border-${c.color}-500 transition-all" onclick="setupChannel('${c.label}')">
+            <i class="fab ${c.icon} text-${c.color}-400 text-sm"></i>
+            <span class="text-xs font-medium text-white">${c.label}</span>
+            <span class="text-xs text-slate-500">Setup →</span>
+          </div>`).join('')}
+        </div>
+      </div>
+    </div>
+
+    <!-- Alert Type Filters -->
+    <div class="flex gap-2 mb-5 flex-wrap">
+      <span class="text-xs text-slate-400 self-center">Filter:</span>
+      <button onclick="filterAlerts('all')" class="tab-btn active text-xs" id="filter-all">All Alerts</button>
+      <button onclick="filterAlerts('viral')" class="tab-btn text-xs" id="filter-viral"><i class="fas fa-fire mr-1 text-red-400"></i>Viral</button>
+      <button onclick="filterAlerts('price')" class="tab-btn text-xs" id="filter-price"><i class="fas fa-tag mr-1 text-green-400"></i>Price Drops</button>
+      <button onclick="filterAlerts('competitor')" class="tab-btn text-xs" id="filter-competitor"><i class="fas fa-binoculars mr-1 text-orange-400"></i>Competitors</button>
+      <button onclick="filterAlerts('trend')" class="tab-btn text-xs" id="filter-trend"><i class="fas fa-chart-line mr-1 text-indigo-400"></i>Trends</button>
+      <button onclick="filterAlerts('seasonal')" class="tab-btn text-xs" id="filter-seasonal"><i class="fas fa-calendar mr-1 text-purple-400"></i>Seasonal</button>
+    </div>
+
+    <!-- Alerts Feed -->
+    <div id="alerts-list" class="space-y-3">
+      ${Array(5).fill('<div class="card h-20 shimmer rounded-xl"></div>').join('')}
+    </div>
+
+    <!-- Alert Configuration -->
+    <div class="card p-5 mt-6">
+      <h3 class="font-bold text-white mb-4 flex items-center gap-2"><i class="fas fa-sliders-h text-indigo-400"></i> Alert Configuration</h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        ${[
+          { label: 'Viral Trend Alerts', desc: 'When a product trends +100% in 24hrs', enabled: true, color: 'red' },
+          { label: 'Price Drop Alerts', desc: 'When supplier prices drop >5%', enabled: true, color: 'green' },
+          { label: 'Competitor Moves', desc: 'When competitors launch ads or cut prices', enabled: true, color: 'orange' },
+          { label: 'Seasonal Predictions', desc: '3 weeks before seasonal demand peaks', enabled: false, color: 'purple' },
+          { label: 'New Supplier Alerts', desc: 'When new verified suppliers are found', enabled: true, color: 'cyan' },
+          { label: 'Low Stock Warnings', desc: 'When platform stock runs low on your products', enabled: false, color: 'yellow' },
+        ].map(a => `
+        <div class="flex items-start justify-between p-4 rounded-xl bg-slate-800/50 border border-slate-700 hover:border-slate-600 transition-all">
+          <div class="flex-1">
+            <div class="flex items-center gap-2 mb-1">
+              <div class="w-2 h-2 rounded-full bg-${a.color}-500"></div>
+              <span class="text-sm font-bold text-white">${a.label}</span>
+            </div>
+            <div class="text-xs text-slate-400 leading-relaxed">${a.desc}</div>
+          </div>
+          <button onclick="toggleAlert(this, '${a.label}')"
+            class="ml-3 flex-shrink-0 w-12 h-6 rounded-full transition-all duration-300 flex items-center px-1 ${a.enabled ? 'bg-indigo-600 justify-end' : 'bg-slate-700 justify-start'}">
+            <div class="w-4 h-4 rounded-full bg-white shadow"></div>
+          </button>
+        </div>`).join('')}
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let allAlerts = [];
+let currentFilter = 'all';
+
+async function loadNotifications() {
+  document.getElementById('alerts-list').innerHTML = Array(5).fill('<div class="card h-20 shimmer rounded-xl"></div>').join('');
+  try {
+    const { data } = await axios.get('/api/notifications');
+    if (data.success) {
+      allAlerts = data.data;
+      renderAlerts(allAlerts);
+    }
+  } catch(e) { console.error(e); }
+}
+
+function renderAlerts(alerts) {
+  const el = document.getElementById('alerts-list');
+  if (!alerts.length) {
+    el.innerHTML = '<div class="text-center py-12 text-slate-400"><i class="fas fa-bell text-4xl mb-3 block opacity-30"></i><div class="font-bold">No alerts</div><div class="text-sm mt-1">All quiet — AI is monitoring for opportunities</div></div>';
+    return;
+  }
+
+  el.innerHTML = alerts.map(a => {
+    const priorityBorder = { high: 'border-l-4 border-l-red-500', medium: 'border-l-4 border-l-yellow-500', low: 'border-l-4 border-l-slate-600' }[a.priority] || '';
+    const unreadBg = a.read ? '' : 'bg-slate-800/80';
+    return \`<div class="card p-4 flex gap-4 items-start hover:border-slate-600 transition-all cursor-pointer \${priorityBorder} \${unreadBg}" onclick="markRead('\${a.id}', this)">
+      <div class="w-10 h-10 rounded-xl bg-\${a.color}-900/30 flex items-center justify-center flex-shrink-0 relative">
+        <i class="fas \${a.icon} text-\${a.color}-400"></i>
+        \${!a.read ? '<span class="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-indigo-500 border border-slate-900"></span>' : ''}
+      </div>
+      <div class="flex-1 min-w-0">
+        <div class="flex items-start justify-between gap-2 mb-1">
+          <div class="font-bold text-white text-sm \${!a.read ? 'text-white' : 'text-slate-300'}">\${a.title}</div>
+          <div class="text-xs text-slate-500 flex-shrink-0">\${a.time}</div>
+        </div>
+        <p class="text-xs text-slate-400 leading-relaxed mb-2">\${a.message}</p>
+        <div class="flex items-center gap-3">
+          <a href="\${a.actionUrl}" class="text-xs text-indigo-400 font-bold hover:text-indigo-300 flex items-center gap-1">
+            <i class="fas fa-arrow-right text-xs"></i> \${a.action}
+          </a>
+          <span class="text-xs px-2 py-0.5 rounded-full font-medium
+            \${a.priority === 'high' ? 'bg-red-900/40 text-red-400' : a.priority === 'medium' ? 'bg-yellow-900/40 text-yellow-400' : 'bg-slate-700 text-slate-400'}">
+            \${a.priority.charAt(0).toUpperCase() + a.priority.slice(1)} Priority
+          </span>
+          <span class="text-xs px-2 py-0.5 rounded-full bg-slate-700 text-slate-400 capitalize">\${a.type}</span>
+        </div>
+      </div>
+    </div>\`;
+  }).join('');
+}
+
+function filterAlerts(type) {
+  currentFilter = type;
+  document.querySelectorAll('[id^="filter-"]').forEach(b => b.classList.remove('active'));
+  document.getElementById('filter-' + type)?.classList.add('active');
+  const filtered = type === 'all' ? allAlerts : allAlerts.filter(a => a.type === type);
+  renderAlerts(filtered);
+}
+
+function markRead(id, el) {
+  const alert = allAlerts.find(a => a.id === id);
+  if (alert) { alert.read = true; }
+  el.classList.remove('bg-slate-800/80');
+  const dot = el.querySelector('.bg-indigo-500');
+  if (dot) dot.remove();
+}
+
+function markAllRead() {
+  allAlerts.forEach(a => a.read = true);
+  renderAlerts(currentFilter === 'all' ? allAlerts : allAlerts.filter(a => a.type === currentFilter));
+  showToast('All alerts marked as read', 'success');
+}
+
+function toggleAlert(btn, label) {
+  const isActive = btn.classList.contains('bg-indigo-600');
+  btn.classList.toggle('bg-indigo-600', !isActive);
+  btn.classList.toggle('bg-slate-700', isActive);
+  btn.classList.toggle('justify-end', !isActive);
+  btn.classList.toggle('justify-start', isActive);
+  showToast((isActive ? 'Disabled: ' : 'Enabled: ') + label, isActive ? 'info' : 'success');
+}
+
+function setupChannel(channel) {
+  showToast(\`Setting up \${channel} alerts — available in Pro plan!\`, 'info');
+}
+
+loadNotifications();
+</script>
+`, 'notifications')
 }
 
 // ── PAGE: PRICING ─────────────────────────────────────────────────────────────
